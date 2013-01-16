@@ -1,0 +1,10 @@
+Ms0.2_beta0.6.dat	Output filename
+0.2		Star Mass in Solar Masses
+1.0		Minimum disc radius (AU)
+150.0		Maximum disc radius (AU)
+-8.0		minimum accretion rate (log10 Msol year^-1)
+-6.0		Maximum accretion rate (log10 Msol year^-1)
+1.0e9   	Accretion Timescale (in orbital periods)
+-1		Irradiation (-1=none, 0=fixed Qirr, 1=fixed Tirr, 2=IdaLin )
+1.9		Q_irradiation
+50.0		T_irradiation
