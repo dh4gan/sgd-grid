@@ -1,9 +1,9 @@
 PROGRAM selfgravdisc_modelgrid
-  !	Program does a parameter survey of self-gravitating disc models
-  !	Writes disc properties and fragmentation outcomes...
-  !	******** Assumes fixed Q
-  !	******** Surveys the mdot - r parameter space only
-  !	Finds local Jeans mass ==> potential fragment masses
+  ! Program does a parameter survey of self-gravitating disc models
+  ! Writes disc properties and fragmentation outcomes...
+  ! ******** Assumes fixed Q
+  ! ******** Surveys the mdot - r parameter space only
+  ! Finds local Jeans mass ==> potential fragment masses
 
   use eosdata
   implicit none
@@ -26,7 +26,7 @@ PROGRAM selfgravdisc_modelgrid
   real :: Mstar, rmax,rmin,dr,r
   real :: mdotmin, mdotmax, mdotvisc, dmdot
   real :: sigma, omega, cs,rhomid,alpha, gamma, mu, T, kappa
-  real :: mtot,qratio
+  real :: mtot,qratio,tevolve
   real :: dT,sigma_old,ntries,mdot_try,fine
   real :: deltasigma, metallicity
 
@@ -48,12 +48,12 @@ PROGRAM selfgravdisc_modelgrid
   print*, "-----------------------------------------------"
   print*, " "
   print*, " "
-  print*, " input files: ./survey_jeans.params ./myeos.dat" 
+  print*, " input files: ./selfgravdisc_modelgrid.params ./myeos.dat" 
   print*, " "
   print*, "-----------------------------------------------"
   print*, " "
 
-  OPEN(10,file='survey_jeans.params', status='unknown')
+  OPEN(10,file='selfgravdisc_modelgrid.params', status='unknown')
   READ(10,*) outputfile
   READ(10,*) nrad
   READ(10,*) nmdot
@@ -107,7 +107,8 @@ PROGRAM selfgravdisc_modelgrid
   CALL eosread
 
   OPEN(10,file=outputfile ,status='unknown')
-  write(10,*) nrad, nmdot, Mstar/umass, metallicity, gamma_sigma,gamma_omega, irrchoice, Q_irr, T_irr
+  write(10,*) nrad, nmdot, rmin/udist,rmax/udist,mdotmin,mdotmax, &
+       Mstar/umass, metallicity, gamma_sigma,gamma_omega, irrchoice, Q_irr, T_irr
 
   ! Loop over parameters
 

@@ -1,4 +1,4 @@
-Ms0.2_beta0.6		Output filename
+Ms0.2.model		Output filename
 100			Number of radius evaluations
 100			Number of accretion rate evaluations
 0.2			Star Mass in Solar Masses
