@@ -1,0 +1,9 @@
+Ms0.2_beta0.6.model	input filename
+Ms0.2_beta0.6.observe	output filename
+140.0		Distance to the disc (pc)
+8.7e-2		Wavelength of interest (cm)
+0.035		Opacity at reference wavelength
+8.5e-2		Reference Wavelength (cm)
+1.0		Opacity Power Law index
+30.0		Assumed Dust Temperature
+

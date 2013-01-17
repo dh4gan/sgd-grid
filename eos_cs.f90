@@ -10,12 +10,12 @@
 
       implicit none
 
-      integer :: i,j,p
+      integer :: i,j
       real :: mT,mT1,mT2,cT,cT1,cT2,T1,T2
       real :: mmu,mmu1,mmu2,cmu,cmu1,cmu2,mu1,mu2
       real :: mkap,mkap1,mkap2,ckap,ckap1,ckap2,kap1,kap2 
       real :: mkbar,mkbar1,mkbar2,ckbar,ckbar1,ckbar2,kbar1,kbar2
-      real :: cv, rho, cs, gamma
+      real :: rho, cs
       	  		      
 ! gammamuT columns:
 ! 1) gamma

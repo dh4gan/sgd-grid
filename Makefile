@@ -15,7 +15,7 @@ FC     = gfortran
 #FFLAGS = -O3 -fPIC -frecord-marker=4 -fconvert=swap -fdefault-real-8
 
 # For files generated from stacpolly use these flags
-FFLAGS = -O3 -frecord-marker=4 -fdefault-real-8  
+FFLAGS = -O3 -frecord-marker=4 -fdefault-real-8 -Wunused 
 
 # For files generated on seaforth use these flags
 #FFLAGS = -O3 -frecord-marker=4  -Wall
@@ -26,18 +26,22 @@ FFLAGS = -O3 -frecord-marker=4 -fdefault-real-8
 %.o: %.f90
 	$(FC) $(FFLAGS) -c $<
 
-SOURCESAF90 = eosmodule.f90 main.f90 eos_T.f90 eosread.f90 \
+SOURCESAF90 = eosmodule.f90 main.f90 eosread.f90 \
 	eos_cs.f90 get_kappa.f90
 OBJECTSA    = $(SOURCESAF90:.f90=.o)
 
 # Create executable files:
-build: survey_jeans
+build: selfgravdisc_modelgrid
 
-survey_jeans:  $(OBJECTSA)
+selfgravdisc_modelgrid:  $(OBJECTSA)
 	$(FC) $(FFLAGS) -o $@ $(OBJECTSA)
+
+calc_observables: calc_observables.f90
+	 $(FC) $(FFLAGS) calc_observables.f90 -o calc_observables
+	rm -f calc_observables.o
 
 # Clean statements:
 clean: 
-	\rm *.o *.mod survey_jeans
+	\rm *.o *.mod selfgravdisc_modelgrid calc_observables
 
 # End Makefile
