@@ -31,7 +31,7 @@ PROGRAM selfgravdisc_modelgrid
   real :: deltasigma, metallicity
 
   real :: gamma_J, gamma_omega, gamma_sigma, gamma_Q
-
+  real :: csterm, gamma_sigma_max
   real :: mdot_eq, alpha_eq
   real :: tau,H,betac,dsig
   real :: mjeans, ljeans, rhill
@@ -265,10 +265,6 @@ PROGRAM selfgravdisc_modelgrid
            !	print*, 'MRI active ', T, alpha, sigma
         ENDIF
 
-        !	Calculate enclosed Mass and mass ratio
-
-        mtot = mtot + twopi*r*sigma*dr
-        qratio = mtot/Mstar
 
         
         !	Calculate Local Jeans Mass and jeans length
@@ -293,17 +289,43 @@ PROGRAM selfgravdisc_modelgrid
         ! 2. gamma_Q large (Q relatively unchanging)
 
         ! First, calculate gamma_Q from gamma_sigma, gamma_omega
+        ! TODO - change this condition to find maximum gamma_sigma to maintain steady state disc
 
-        IF(alpha<alpha_sat) THEN
-           gamma_J = 1.25*(9.0*alpha*gamma*(gamma-1)/4.0 - 1/betac) - 1.5/gamma_sigma + 0.5/gamma_omega
-           gamma_Q = 0.5*(9.0*alpha*gamma*(gamma-1)/4.0 - 1/betac) - 1.0/gamma_sigma + 1.0/gamma_omega
+        ! If self-gravitating alpha exceeds saturation, fix it at saturation
+        IF(alpha> alpha_sat) alpha = alpha_sat
+
+        csterm = 9.0*alpha*gamma*(gamma-1)/4.0 - 1/betac
+
+        ! Calculate maximum gamma sigma value allowed to maintain a steady disc
+
+        gamma_sigma_max = 2.0*csterm
+        IF(gamma_sigma_max==0.0) THEN
+           gamma_sigma_max = 1.0/gamma_sigma_max
         ELSE
-           gamma_J = 1.5*(9.0*alpha_sat*gamma*(gamma-1)/4.0 - 1/betac) - 1.5/gamma_sigma - 0.5/gamma_omega
-           gamma_Q = 1.25*(9.0*alpha*gamma*(gamma-1)/4.0 - 1/betac) - 1.5/gamma_sigma -0.5/gamma_omega
+           gamma_sigma_max = 1.0e20
         ENDIF
 
-        gamma_J = 1.0/gamma_J
-        gamma_Q = 1.0/gamma_Q
+        IF(gamma_sigma>gamma_sigma_max) THEN
+           gamma_Q = 5e-31
+           gamma_J = 1.5*csterm
+        ELSE
+           gamma_J = 1.25*csterm - 1.5/gamma_sigma + 0.5/gamma_omega
+           gamma_Q = 0.5*csterm - 1.0/gamma_sigma + 1.0/gamma_omega
+        ENDIF
+     
+        IF(gamma_J/=0.0) then
+           gamma_J = 1.0/gamma_J
+        else
+           gamma_J = 1.0e30
+        endif
+
+        IF(gamma_Q/=0.0) then
+           gamma_Q = 1.0/gamma_Q
+        else
+           gamma_Q = 1.0e30
+        endif
+
+
 
         ! Test for fragmentation
 
@@ -321,9 +343,17 @@ PROGRAM selfgravdisc_modelgrid
         IF(Q_irr==Q_irrcrit) selfgrav = 0
 
         ! If disc will be completely accreted within 5 orbital periods, not of interest
+
+        
+        !	Calculate enclosed Mass and mass ratio
+
+        mtot = mtot + twopi*r*sigma*dr
+        qratio = mtot/Mstar
+
         tevolve = mtot*omega/mdotvisc
         if(tevolve < 5) selfgrav = 0
 
+        !print*, r/udist, frag, selfgrav, tevolve,gamma_J, gamma_Q
         ! Now check fragmenting disc is self-gravitating
         frag = frag*selfgrav
 
@@ -335,7 +365,9 @@ PROGRAM selfgravdisc_modelgrid
         ENDIF
 
         IF(selfgrav==0) THEN
+           mtot = 0.0
            sigma = 0.0
+           qratio = 0.0
            cs = 0.0
            T = 0.0
            alpha = 0.0
@@ -345,10 +377,12 @@ PROGRAM selfgravdisc_modelgrid
            Q_irr = 0.0
         ENDIF
 
+
+
         !	Write disc model to file
 
         WRITE(10,*) r/udist, mdotvisc*3.15e7/umass, qratio,sigma,cs,omega, T,betac,alpha,mjeans, &
-             ljeans, rhill,H, T_irr,cs_irr,Q_irr
+             ljeans, rhill,H/udist, T_irr,cs_irr,Q_irr, gamma_J, gamma_Q
 
 
      ENDDO
