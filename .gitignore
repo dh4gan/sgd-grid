@@ -1,0 +1,5 @@
+# List of filetypes to ignore
+*.o
+*.mod
+*.ps
+run_log

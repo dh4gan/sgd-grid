@@ -1,9 +1,9 @@
 Ms0.2.model	input filename
 Ms0.2.observe	output filename
 140.0		Distance to the disc (pc)
-8.7e-2		Wavelength of interest (cm)
+870.0		Wavelength of interest (microns)
 0.035		Opacity at reference wavelength
-8.5e-2		Reference Wavelength (cm)
+850.0		Reference Wavelength (microns)
 0.6		Opacity Power Law index
 30.0		Assumed Dust Temperature
 

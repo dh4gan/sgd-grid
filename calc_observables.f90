@@ -38,7 +38,7 @@ PROGRAM calc_observables
   print*, "-----------------------------------------------"
   print*, " "
   print*, " "
-  print*, " input files: ./calc_observables.params ./myeos.dat" 
+  print*, " input files: ./calc_observables.params" 
   print*, " "
   print*, "-----------------------------------------------"
   print*, " "
@@ -54,7 +54,9 @@ PROGRAM calc_observables
   read(10,*) Tdust
   close(10)
 
-
+  ! Convert wavelengths into cm
+  lambda = lambda*1e-4
+  lambda0 = lambda0*1e-4
  
 
   print*, 'Reading file ', inputfile
@@ -71,7 +73,7 @@ PROGRAM calc_observables
   kappa_nu = kappa0*(nu/nu0)**(beta_k)
 
   OPEN(20,file=outputfile,status='unknown')
-
+  write(20,*) nrad,nmdot,nu,lambda*1e4, rmin, rmax,mdotmin,mdotmax,Mstar,metallicity,gamma_sigma,gamma_omega,irrchoice,Q_irr,T_irr
   ! Loop over parameters
 
   DO imdot = 1, nmdot
@@ -94,7 +96,7 @@ PROGRAM calc_observables
            flux_nu = (2.0*Boltzmannk/(c*c))*nu*nu*(T/(sigma*kappa_nu)**0.25)*twopi*r*dr/(distance*distance)
 
         ENDIF
-        print*, flux_nu, Boltzmannk, c, nu, T,sigma,kappa_nu, distance, twopi*r*dr
+        !print*, flux_nu, Boltzmannk, c, nu, T,sigma,kappa_nu, distance, twopi*r*dr
 
         !	Calculate total flux emitted up to and including this radius
 
@@ -107,7 +109,7 @@ PROGRAM calc_observables
 
         !	Write to file
 
-        WRITE(20,*) r/udist, mdotvisc, qratio,mtot, flux_nu/1e-23, fluxtot/1e-23,mflux/umass
+        WRITE(20,*) r/udist, mdotvisc, qratio,mtot, flux_nu/1e-23, fluxtot/1e-23,mflux/umass, mflux/(umass*mtot)
 
      ENDDO
   ENDDO
