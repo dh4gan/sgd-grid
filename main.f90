@@ -35,7 +35,7 @@ PROGRAM selfgravdisc_modelgrid
   real :: mdot_eq, alpha_eq
   real :: tau,H,betac,dsig
   real :: mjeans, ljeans, rhill
-  real :: cs_irr, T_irr, Q_irr, Msol, rAU
+  real :: cs_irr, T_irr, Q_irr, Msol, rAU, TLin
   character(100) :: outputfile
 
   ! Get input parameters and set up header:
@@ -205,24 +205,26 @@ PROGRAM selfgravdisc_modelgrid
               IF(irrchoice==2) THEN
                  rAU = r/udist
                  Msol = Mstar/umass
-                 T_irr = 280.0*Msol/sqrt(rAU)
+                 TLin = 280.0*Msol/sqrt(rAU)                 
                  ! Must account for optical depth
-                 IF(tau/=0.0)T_irr = T_irr/(tau+1.0/tau)**0.25
+                 IF(tau/=0.0)TLin = TLin/(tau+1.0/tau)**0.25
+!               T_irr = max(TLin, T_irr)
+                 T_irr = TLin
               ENDIF
 
               cs_irr = SQRT(gamma*Boltzmannk*T_irr/(mu*mH))
               Q_irr = cs_irr*omega/(pi*G*sigma)
               ! If Q_irr > crit then fix it to crit
-              IF(Q_irr>Q_irrcrit) THEN
+              !IF(Q_irr>Q_irrcrit) THEN
 
-                 Q_irr = Q_irrcrit
-                 cs_irr = Q_irr*pi*G*sigma/omega
-                 T_irr = 0.0
-                 IF(cs_irr/=0.0) THEN
-                    CALL eos_cs(rhomid,cs_irr)                 
-                    T_irr = gammamuT(3)
-                 ENDIF
-              ENDIF
+              !   Q_irr = Q_irrcrit
+              !   cs_irr = Q_irr*pi*G*sigma/omega
+              !   T_irr = 0.0
+              !   IF(cs_irr/=0.0) THEN
+              !      CALL eos_cs(rhomid,cs_irr)                 
+              !      T_irr = gammamuT(3)
+              !   ENDIF
+              !ENDIF
            ENDIF
 
            ! Calculate cooling timescale for these parameters
@@ -299,7 +301,7 @@ PROGRAM selfgravdisc_modelgrid
         ! Calculate maximum gamma sigma value allowed to maintain a steady disc
 
         gamma_sigma_max = 2.0*csterm
-        IF(gamma_sigma_max==0.0) THEN
+        IF(gamma_sigma_max/=0.0) THEN
            gamma_sigma_max = 1.0/gamma_sigma_max
         ELSE
            gamma_sigma_max = 1.0e20
@@ -325,8 +327,6 @@ PROGRAM selfgravdisc_modelgrid
            gamma_Q = 1.0e30
         endif
 
-
-
         ! Test for fragmentation
 
         frag = 1  ! Set fragmentation flag to 'true' initially
@@ -340,15 +340,14 @@ PROGRAM selfgravdisc_modelgrid
         IF(gamma_J < gamma_Jcrit .or. gamma_J > 0.0) frag = 0
 
         ! If irradiation completely suppresses self-gravity, not self-gravitating
-        IF(Q_irr==Q_irrcrit) selfgrav = 0
-
-        ! If disc will be completely accreted within 5 orbital periods, not of interest
-
+        IF(Q_irr==Q_irrcrit) selfgrav = 0                     
         
         !	Calculate enclosed Mass and mass ratio
 
         mtot = mtot + twopi*r*sigma*dr
         qratio = mtot/Mstar
+
+        ! If disc will be completely accreted within 5 orbital periods, not of interest
 
         tevolve = mtot*omega/mdotvisc
         if(tevolve < 5) selfgrav = 0

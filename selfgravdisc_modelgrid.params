@@ -7,8 +7,8 @@ Ms0.2_highsig.model		Output filename
 -7.0			Minimum accretion rate (log10 Msol year^-1)
 -4.0			Maximum accretion rate (log10 Msol year^-1)
 1.0			Metallicity relative to solar
-1.0e2   		Accretion Timescale (in orbital periods)
-2.0e2			Omega variation timescale (in orbital periods)
+5.0e2   		Accretion Timescale (in orbital periods)
+1.0e3			Omega variation timescale (in orbital periods)
 -1			Irradiation (-1=none, 0=fixed Qirr, 1=fixed Tirr, 2=IdaLin )
 1.9			Q_irradiation
 50.0			T_irradiation

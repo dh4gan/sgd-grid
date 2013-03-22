@@ -107,9 +107,9 @@ PROGRAM calc_observables
 
         mflux = distance*distance*fluxtot*c*c/(2.0*kappa_nu*nu*nu*Boltzmannk*Tdust)
 
-        !	Write to file
+        !	Write to file (flux output in mJy)
 
-        WRITE(20,*) r/udist, mdotvisc, qratio,mtot, flux_nu/1e-23, fluxtot/1e-23,mflux/umass, mflux/(umass*mtot)
+        WRITE(20,*) r/udist, mdotvisc, qratio,mtot, flux_nu/1e-26, fluxtot/1e-26,mflux/umass, mflux/(umass*mtot)
 
      ENDDO
   ENDDO
