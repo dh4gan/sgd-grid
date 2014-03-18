@@ -114,5 +114,7 @@ PROGRAM calc_observables
      ENDDO
   ENDDO
 
+close(10)
+close(20)
 
 END PROGRAM calc_observables

@@ -291,7 +291,6 @@ PROGRAM selfgravdisc_modelgrid
         ! 2. gamma_Q large (Q relatively unchanging)
 
         ! First, calculate gamma_Q from gamma_sigma, gamma_omega
-        ! TODO - change this condition to find maximum gamma_sigma to maintain steady state disc
 
         ! If self-gravitating alpha exceeds saturation, fix it at saturation
         IF(alpha> alpha_sat) alpha = alpha_sat
@@ -332,10 +331,6 @@ PROGRAM selfgravdisc_modelgrid
         frag = 1  ! Set fragmentation flag to 'true' initially
         selfgrav = 1 ! Set self-gravitating flag to 'true' initially
 
-        ! If gamma_Q not large enough, disc not self-gravitating
-
-        IF(abs(gamma_Q) < gamma_Qcrit) selfgrav = 0
-
         ! If gamma_J not small and negative, disc non-fragmenting
         IF(gamma_J < gamma_Jcrit .or. gamma_J > 0.0) frag = 0
 
@@ -352,10 +347,8 @@ PROGRAM selfgravdisc_modelgrid
         tevolve = mtot*omega/mdotvisc
         if(tevolve < 5) selfgrav = 0
 
-        !print*, r/udist, frag, selfgrav, tevolve,gamma_J, gamma_Q
         ! Now check fragmenting disc is self-gravitating
         frag = frag*selfgrav
-
 
         IF(frag==0) THEN
            mjeans = 0.0
@@ -376,12 +369,10 @@ PROGRAM selfgravdisc_modelgrid
            Q_irr = 0.0
         ENDIF
 
-
-
         !	Write disc model to file
 
         WRITE(10,*) r/udist, mdotvisc*3.15e7/umass, qratio,sigma,cs,omega, T,betac,alpha,mjeans, &
-             ljeans, rhill,H/udist, T_irr,cs_irr,Q_irr, gamma_J, gamma_Q
+             ljeans, rhill,H/udist, T_irr,cs_irr,Q_irr, log10(1.0/gamma_J), log10(1.0/gamma_Q)
 
 
      ENDDO

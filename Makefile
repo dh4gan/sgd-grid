@@ -1,6 +1,6 @@
 #####################################################
 ###                                               ###
-###  Makefile for disc survey routine   	  ###
+###  Makefile for selfgravdisc_modelgrid   	  ###
 ###  (updated throughout to Fortran 90)           ###
 ###                                               ###
 ###         Duncan H. Forgan 18/02/2011           ###
@@ -10,15 +10,7 @@
 
 # Compiler variables for WKMR/DHF:
 FC     = gfortran
-
-# For big endian files generated from stacpolly use these flags
-#FFLAGS = -O3 -fPIC -frecord-marker=4 -fconvert=swap -fdefault-real-8
-
-# For files generated from stacpolly use these flags
 FFLAGS = -O3 -frecord-marker=4 -fdefault-real-8 -Wunused 
-
-# For files generated on seaforth use these flags
-#FFLAGS = -O3 -frecord-marker=4  -Wall
 
 # Create object files:
 %.o: %.f
