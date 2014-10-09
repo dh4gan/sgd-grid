@@ -1,5 +1,6 @@
 PROGRAM selfgravdisc_modelgrid
-  ! Program does a parameter survey of self-gravitating disc models
+  ! Program creates a large number of self-gravitating disc models
+  ! So that user can carry out a parameter survey
   ! Writes disc properties and fragmentation outcomes...
   ! ******** Assumes fixed Q
   ! ******** Surveys the mdot - r parameter space only
@@ -36,6 +37,7 @@ PROGRAM selfgravdisc_modelgrid
   real :: tau,H,betac,dsig
   real :: mjeans, ljeans, rhill
   real :: cs_irr, T_irr, Q_irr, Msol, rAU, TLin
+
   character(100) :: outputfile
 
   ! Get input parameters and set up header:
@@ -101,8 +103,9 @@ PROGRAM selfgravdisc_modelgrid
   ! 4) Opacity
   ! 5) Mass Weighted Opacity (Stamatellos et al 2007)
 
-  allocate(gammamuT(5)	)	
-  !	Read in EoS
+  allocate(gammamuT(5)	)
+
+  !	Read in Equation of State
 
   CALL eosread
 
@@ -110,7 +113,7 @@ PROGRAM selfgravdisc_modelgrid
   write(10,*) nrad, nmdot, rmin/udist,rmax/udist,mdotmin,mdotmax, &
        Mstar/umass, metallicity, gamma_sigma,gamma_omega, irrchoice, Q_irr, T_irr
 
-  ! Loop over parameters
+  ! Loop over parameters: accretion rate, and outer radius
 
   DO imdot = 1, nmdot
 
@@ -214,17 +217,7 @@ PROGRAM selfgravdisc_modelgrid
 
               cs_irr = SQRT(gamma*Boltzmannk*T_irr/(mu*mH))
               Q_irr = cs_irr*omega/(pi*G*sigma)
-              ! If Q_irr > crit then fix it to crit
-              !IF(Q_irr>Q_irrcrit) THEN
 
-              !   Q_irr = Q_irrcrit
-              !   cs_irr = Q_irr*pi*G*sigma/omega
-              !   T_irr = 0.0
-              !   IF(cs_irr/=0.0) THEN
-              !      CALL eos_cs(rhomid,cs_irr)                 
-              !      T_irr = gammamuT(3)
-              !   ENDIF
-              !ENDIF
            ENDIF
 
            ! Calculate cooling timescale for these parameters
@@ -241,7 +234,11 @@ PROGRAM selfgravdisc_modelgrid
            mdot_try = 3.0*pi*alpha*cs*cs*sigma/omega
            dT = (mdotvisc-mdot_try)/mdotvisc
 
-           IF(ntries> 1000) THEN 
+        ! If the iteration isn't converging after 1000 tries,
+        ! Reduce the amount by which sigma is modified
+
+
+           IF(ntries> 1000) THEN
               fine = fine/10.0
               ntries = 0.0
            ENDIF
@@ -250,6 +247,7 @@ PROGRAM selfgravdisc_modelgrid
 
            IF(ABS(dsig)<1.0e-5.and.ntries>500) exit  ! Exit if percentage change in sigma very small
 
+            ! Modify sigma according to how poorly accretion rate is matched
            sigma_old = sigma
            sigma = sigma*(1.0 +dT/(abs(dT))*fine)
 

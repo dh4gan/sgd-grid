@@ -1,7 +1,6 @@
 #####################################################
 ###                                               ###
 ###  Makefile for selfgravdisc_modelgrid   	  ###
-###  (updated throughout to Fortran 90)           ###
 ###                                               ###
 ###         Duncan H. Forgan 18/02/2011           ###
 ###       				          ###
