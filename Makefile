@@ -1,6 +1,6 @@
 #####################################################
 ###                                               ###
-###  Makefile for selfgravdisc_modelgrid   	  ###
+###  Makefile for sgd_grid  	  ###
 ###                                               ###
 ###         Duncan H. Forgan 18/02/2011           ###
 ###       				          ###
@@ -22,9 +22,9 @@ SOURCESAF90 = eosmodule.f90 main.f90 eosread.f90 \
 OBJECTSA    = $(SOURCESAF90:.f90=.o)
 
 # Create executable files:
-build: selfgravdisc_modelgrid
+build: sgd_grid
 
-selfgravdisc_modelgrid:  $(OBJECTSA)
+sgd_grid:  $(OBJECTSA)
 	$(FC) $(FFLAGS) -o $@ $(OBJECTSA)
 
 calc_observables: calc_observables.f90
@@ -33,6 +33,6 @@ calc_observables: calc_observables.f90
 
 # Clean statements:
 clean: 
-	\rm *.o *.mod selfgravdisc_modelgrid calc_observables
+	\rm *.o *.mod sgd_grid calc_observables
 
 # End Makefile

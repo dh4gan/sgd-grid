@@ -34,7 +34,7 @@ PROGRAM calc_observables
   print*, "-----------------------------------------------"  
   print*, " OBSERVABLES FROM SELF-GRAVITATING DISC MODELS " 
   print*, "     Created by D. Forgan, Jan 2013            "
-  print*, " (Relies on input from selfgravdisc_modelgrid) "
+  print*, " (Relies on input from sgd_grid) "
   print*, "-----------------------------------------------"
   print*, " "
   print*, " "

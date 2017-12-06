@@ -1,4 +1,4 @@
-PROGRAM selfgravdisc_modelgrid
+PROGRAM sgd_grid
   ! Program creates a large number of self-gravitating disc models
   ! So that user can carry out a parameter survey
   ! Writes disc properties and fragmentation outcomes...
@@ -52,12 +52,12 @@ PROGRAM selfgravdisc_modelgrid
   print*, "-----------------------------------------------"
   print*, " "
   print*, " "
-  print*, " input files: ./selfgravdisc_modelgrid.params ./myeos.dat" 
+  print*, " input files: ./sgd_grid.params ./myeos.dat" 
   print*, " "
   print*, "-----------------------------------------------"
   print*, " "
 
-  OPEN(10,file='selfgravdisc_modelgrid.params', status='unknown')
+  OPEN(10,file='sgd_grid.params', status='unknown')
   READ(10,*) outputfile
   READ(10,*) nrad
   READ(10,*) nmdot
@@ -384,4 +384,4 @@ PROGRAM selfgravdisc_modelgrid
   ENDDO
 
 
-END PROGRAM selfgravdisc_modelgrid
+END PROGRAM sgd_grid

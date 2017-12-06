@@ -15,7 +15,7 @@ program using gfortran through the command
 
 And run using the command
 
-`> ./selfgravdisc_modelgrid`
+`> ./sgd_grid`
 
 The calc_observables code is compiled using the command
 `> make calc_observables`
@@ -25,9 +25,9 @@ And run with
 `> ./calc_observables`
 
 
-The input parameters are specified in `selfgravdisc_modelgrid.params`
+The input parameters are specified in `sgd_grid.params`
 and `calc_observables.params' respectively
 
 The output files can be plotted using Python scripts found in the
-`plot_selfgravdisc_modelgrid` repository
+`plot_sgd_grid` repository
 
