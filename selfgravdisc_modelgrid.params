@@ -1,15 +1,15 @@
-Ms1_inversegammas.model		Output filename
+Ms25_7to4Tstar.model		Output filename
 1000			Number of radius evaluations
 1000			Number of accretion rate evaluations
-1.0			Star Mass in Solar Masses
-1.0			Minimum disc radius (AU)
-150.0			Maximum disc radius (AU)
--7.0			Minimum accretion rate (log10 Msol year^-1)
--4.0			Maximum accretion rate (log10 Msol year^-1)
+25.0			Star Mass in Solar Masses
+800.0			Minimum disc radius (AU)
+1550.0			Maximum disc radius (AU)
+-9.0			Minimum accretion rate (log10 Msol year^-1)
+-5.0			Maximum accretion rate (log10 Msol year^-1)
 1.0			Metallicity relative to solar
 1.0e30   		Accretion Timescale (in orbital periods)
 1.0e30			Omega variation timescale (in orbital periods)
--1			Irradiation (-1=none, 0=fixed Qirr, 1=fixed Tirr, 2=IdaLin )
+2			Irradiation (-1=none, 0=fixed Qirr, 1=fixed Tirr, 2=IdaLin )
 1.9			Q_irradiation
 50.0			T_irradiation
 

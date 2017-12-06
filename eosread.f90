@@ -21,7 +21,7 @@
 	real :: cv, gamma
 ! Open eos data file and read in values
 
-      open(50,file="/disk1/dhf/programs/datafiles/myeos.dat", &
+      open(50,file="/data/dhf3/programs/datafiles/myeos.dat", &
            status='old',iostat=check,action='read')
       if (check /= 0) then
          print*, 'Input file myeos.dat not found'

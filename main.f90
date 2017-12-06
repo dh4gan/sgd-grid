@@ -37,6 +37,8 @@ PROGRAM selfgravdisc_modelgrid
   real :: tau,H,betac,dsig
   real :: mjeans, ljeans, rhill
   real :: cs_irr, T_irr, Q_irr, Msol, rAU, TLin
+  real :: TLin_constant
+
 
   character(100) :: outputfile
 
@@ -87,7 +89,12 @@ PROGRAM selfgravdisc_modelgrid
      print*, 'Irradiation: fixed Tirr of ', T_irr
   else if (irrchoice==2) then
      print*, 'Irradiation: Ida Lin prescription'
+	TLin_constant = T_irr
+     print*, 'Scaling constant ', TLin_constant
   endif
+
+   print*, 'Gamma_Omega: ', gamma_omega
+  print*, 'Gamma_Sigma: ', gamma_sigma
 
   rmin = rmin*udist
   rmax = rmax*udist
@@ -208,7 +215,7 @@ PROGRAM selfgravdisc_modelgrid
               IF(irrchoice==2) THEN
                  rAU = r/udist
                  Msol = Mstar/umass
-                 TLin = 280.0*Msol/sqrt(rAU)                 
+                 TLin = TLin_constant*Msol/sqrt(rAU)                 
                  ! Must account for optical depth
                  IF(tau/=0.0)TLin = TLin/(tau+1.0/tau)**0.25
 !               T_irr = max(TLin, T_irr)
@@ -343,7 +350,7 @@ PROGRAM selfgravdisc_modelgrid
         ! If disc will be completely accreted within 5 orbital periods, not of interest
 
         tevolve = mtot*omega/mdotvisc
-        if(tevolve < 5) selfgrav = 0
+!        if(tevolve < 5) selfgrav = 0
 
         ! Now check fragmenting disc is self-gravitating
         frag = frag*selfgrav
