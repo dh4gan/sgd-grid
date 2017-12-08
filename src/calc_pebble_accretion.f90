@@ -46,13 +46,13 @@ PROGRAM calc_pebble_accretion
   read(10,*) inputfile
   READ(10,*) outputfile
   READ(10,*) tstop ! Stopping time (dimensionless)
+  read(10,*) zpeb ! Metallicity of disc
+  read(10,*) growth_parameter ! growth rate of pebbles t_peb = growth_parameter *(zpeb*omega(irad)^-1
   read(10,*) rmax_peb ! Maximum radius to consider pebble accretion
-
-  !TODO - finish read in of parameters
   close(10)
 
   print*, 'Reading file ', inputfile
-  print*, 'Outputting to file ', outputfile
+  print*, 'Outputting pebble accretion data to file ', outputfile
 
   OPEN(10,file=inputfile ,status='unknown')
 
@@ -64,46 +64,94 @@ PROGRAM calc_pebble_accretion
   ! TODO - find index of maximum radius for pebble accretion (npebrad)
   dr = (rmax-rmin)/REAL(nrad)
   dr = dr*udist
-  distance = distance*pc
-  nu = c/lambda
-  nu0 = c/lambda0
-  kappa_nu = kappa0*(nu/nu0)**(beta_k)
+  imax_peb = int(rmax_peb/dr) + 1
 
+
+  distance = distance*pc
+
+
+  ! Write header for log output file
   OPEN(20,file=outputfile,status='unknown')
-  write(20,*) nrad,nmdot,nu,lambda*1e4, rmin, rmax,mdotmin,mdotmax,Mstar,metallicity,gamma_sigma,gamma_omega,irrchoice,Q_irr,T_irr
+  write(20,*) nrad,nmdot,nu,rmin,rmax,mdotmin,mdotmax,Mstar,metallicity,gamma_sigma,gamma_omega,irrchoice,Q_irr,T_irr
+
   ! Loop over accretion rates
 
   DO imdot = 1, nmdot
 
-     mtot = 0.0
-     fluxtot = 0.0
-
      ! Read entire disc over pebble growth radius
-     DO irad = 1,npebrad
+     DO irad = 1,imax_peb
 
-        read(10,*) r, mdotvisc, qratio, sigma, cs,omega,T,betac,alpha
+        read(10,*) r(irad), mdotvisc(irad), qratio(irad), sigma(irad), cs(irad),omega(irad),T(irad),betac(irad),alpha(irad)
 
-        r = r*udist
+        ! TODO - check units
+        H(irad) = cs(irad)/omega(irad)
+        rho(irad) = sigma(irad)/(2.0*H(irad))
+        !r(irad) = r(irad)*udist
         
      ! Calculate pressure gradient and eta - sub Keplerian parameter
+
+        if(irad>1) then
+
+           dlogrhodr = (log(rho(irad)*cs(irad)*cs(irad)) - log(rho(irad)*cs(irad)*cs(irad)))/(log(r(irad) - log(r(irad-1)))
+
+        else
+           dlogrhodr = 0.0
+        endif
+
+        eta(irad) = -0.5(H(irad)/(r(irad))**2 * dlogrhodr
+
+         ! Radial velocity of pebbles
+        vrpeb(irad) = -2.0*eta(irad)*omega(irad)*r(irad)*tstop/(1.0 + tstop*tstop)
+
 
      enddo
 
      ! Now loop over radius, where radius now refers to rpeb
 
-     do irad =1,npebrad
+     do ipebrad =1,npebrad
 
-        rpeb = 
+        rpeb = r(ipebrad)
+
+        ! Calculate growth rate of pebbles
+
+        ! Pebble growth timescale at this radius
+        tpeb = growth_param/(zpeb*omega(ipebrad))
+
+        ! Pebble front growth rate
+        rdotpeb = 0.6666*(G*Mstar*zpeb*zpeb/(tpeb*growth_param*growth_param))**(0.333)
+
+       
         ! Compute mdotpebble
+        mdotpebble = 2.0*pi*rpeb*rdotpeb*zpeb*sigma(ipebrad)
 
+        stream_unstable(:) = 0
+        inner_radius = .false.
+        outer_radius = .false.
+        do jrad =1,ipebrad
+           ! Compute rhop/rhog interior to pebble radius
+           rhop_rhog(jrad) = mdotpebble/(2.0*pi*r(jrad)*vrpeb(jrad)
 
-        do jrad =1,irad
-        ! Compute rhop/rhog interior to pebble radius
-           r=
-
-        ! If rhop/rhog >1, mark this radius as streaming unstable region
+           ! If rhop/rhog >1, mark this radius as streaming unstable region
            
+           if(rhop_rhog(jrad)>1.0) then
+              stream_unstable(jrad) = 1
+
+              ! Record minimum and maximum values of streaming regions (assuming single region only
+              if(inner_radius.eqv..false.) then
+                 rmin_unstable = r(jrad)
+                 inner_radius = .true.
+              endif
+           else
+              if(stream_unstable(jrad-1)==1) then
+                 rmax_unstable = r(jrad)
+                 outer_radius = .true.
+              endif
+
         enddo
+
+        ! Find width of unstable region 
+
+        rmin_unstable = 
 
         ! Compute crossing mass at this rpeb
 
