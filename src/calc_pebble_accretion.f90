@@ -88,6 +88,8 @@ PROGRAM calc_pebble_accretion
        gamma_sigma,gamma_omega,irrchoice,Q_irr,T_irr
 
   mstar = mstar*umass
+  mplanet = mplanet*mjup
+
   print*, 'There are ', nrad, ' radii in the input file'
 
   allocate(r(nrad))
@@ -196,7 +198,7 @@ PROGRAM calc_pebble_accretion
         ! Pebble front growth rate
         rdotpeb = 0.6666*(G*Mstar*zpeb*zpeb/(tpeb*beta_peb*beta_peb))**(0.333)
 
-        ! Compute mdotpebble
+        ! Compute mdotpebble (g s^-1)
         mdotpebble = 2.0*pi*rpeb*rdotpeb*zpeb*sigma(ipebrad)
 
 !        print*, mdotvisc*3.15e7/umass, mstar/umass, rpeb/udist, tpeb/3.15e7, rdotpeb*3.15e7/udist, mdotpebble*3.15e7/umass
@@ -209,6 +211,8 @@ PROGRAM calc_pebble_accretion
         outer_radius = .false.
         rmin_unstable = 0.0
         rmax_unstable = 0.0
+        irmin_unstable = 0
+        irmax_unstable = 0
 
         do jrad =2,ipebrad
 
@@ -238,15 +242,14 @@ PROGRAM calc_pebble_accretion
 
         enddo
 
-!!$        print*, 'out'
-!!$        ! If streaming zone goes right to pebble front, make sure outer radius is found
-!!$        if (inner_radius.eqv. .true. .and. outer_radius.eqv..false.) then
-!!$           print*, 'here'
-!!$           rmax_unstable = r(ipebrad)
-!!$           irmax_unstable = ipebrad
-!!$           outer_radius = .true.
-!!$        endif
-
+        !print*, 'out', irmin_unstable, irmax_unstable
+        ! If streaming zone goes right to pebble front, make sure outer radius is found
+       if (inner_radius.eqv. .true. .and. outer_radius.eqv..false.) then           
+          rmax_unstable = r(ipebrad)
+           irmax_unstable = ipebrad
+           outer_radius = .true.
+        endif
+        
         !****************************************************
         ! 3 Calculate expected core accretion rates
         !****************************************************
@@ -258,11 +261,13 @@ PROGRAM calc_pebble_accretion
         ! Compute surface density of pebbles in here
         sigma_p = mdotpebble/(2.0*pi*r(irmin_unstable)*vrpeb(irmin_unstable))
 
-        print*, sigma(irmin_unstable), sigma_p
+       ! print*, rmin_unstable/udist, rmax_unstable/udist, sigma(irmin_unstable), sigma_p
         ! Compute Pebble Accretion Rate for M= 1 Mjup
         ! Mdot = 2 R_H^2 omega tstop *sigma p
 
-        rhill = r(irmin_unstable)*(mplanet/3.0*mstar)**0.333
+        rhill = rmin_unstable*(mplanet/(3.0*mstar))**0.333
+
+        !print*, rmin_unstable/udist, rhill/udist, mplanet, mstar
 
         planet_pebaccrete = 2.0* rhill*rhill*omega(irmin_unstable)*(tstop**0.66666)*sigma_p
 
