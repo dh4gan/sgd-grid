@@ -3,12 +3,17 @@ PROGRAM calc_pebble_accretion
   ! self-gravitating disc models
   ! Assumes a dust temperature and opacity properties to do so
 
-  use eosdata, only: umass, udist, Boltzmannk
+  use eosdata, only: umass, udist
   implicit none
 
   integer :: irad,imdot,irrchoice
   integer :: nrad, nmdot
 
+  real :: mdotmax,mdotmin, mdotvisc, metallicity, mstar
+  real :: qratio, T, gamma_sigma,gamma_omega
+  real :: Q_irr, T_irr,dr, rmax,rmin, betac
+
+  real, parameter :: G = 6.67e-8
   real, parameter :: pi = 3.14159265285
   real, parameter :: twopi = 2.0*pi
   real, parameter :: sigma_SB = 5.67e-5
@@ -17,16 +22,25 @@ PROGRAM calc_pebble_accretion
   real, parameter :: Qfrag = 2.0
   real, parameter :: mjup = 1.8986e30
   real, parameter :: pc = 206265.0*1.496e13  ! Parsec in cm
+  real, parameter :: gamma1 = 1.0
 
   integer, allocatable,dimension(:) :: stream_unstable
   real, allocatable, dimension(:) :: r, sigma,cs,omega,alpha
   real, allocatable, dimension(:) :: H, eta, vrpeb, rhogas
 
-  integer :: irad, ipebrad,irmin_unstable,ir_max_unstable, jrad
-  real :: tstop, zpeb, beta_peb, rmax_peb, mplanet
+  integer :: ipebrad,npebrad, irmin_unstable,irmax_unstable, jrad, imax_peb
+  real :: tstop, zpeb, beta_peb, rmax_peb, mplanet, Hp_to_Hg, dlogrhodr
   
+  real :: rpeb, rdotpeb, tpeb, mdotpebble, rhill, rhop_rhog
+  real :: rmin_unstable, rmax_unstable, width_unstable
+  real :: planet_pebaccrete, mcross, eff_pebble, sigma_p
+  real :: rpeb_accretemax, tpeb_accretemax
+  real :: planet_accretemax, mcross_accretemax, eff_accretemax
 
+  logical :: inner_radius
+  logical :: outer_radius
 
+  character(7) :: mdot_char
   character(100) ::inputfile, outputprefix, outputlog, output_mdotfile
 
   ! Get input parameters and set up header:
@@ -69,7 +83,8 @@ PROGRAM calc_pebble_accretion
 
   ! Read input file header
 
-  read(10,*) nrad, nmdot, rmin,rmax,mdotmin,mdotmax,Mstar, metallicity,gamma_sigma,gamma_omega,irrchoice,Q_irr,T_irr
+  read(10,*) nrad, nmdot, rmin,rmax,mdotmin,mdotmax,Mstar, metallicity,&
+       gamma_sigma,gamma_omega,irrchoice,Q_irr,T_irr
 
   allocate(r(nrad))
   allocate(sigma(nrad))
@@ -90,7 +105,8 @@ PROGRAM calc_pebble_accretion
 
   ! Write header for log output file
   OPEN(20,file=outputlog,status='unknown')
-  write(20,*) nrad,nmdot,rmin,rmax,mdotmin,mdotmax,Mstar,metallicity,gamma_sigma,gamma_omega,irrchoice,Q_irr,T_irr, tstop,zpeb,beta_peb
+  write(20,*) nrad,nmdot,rmin,rmax,mdotmin,mdotmax,Mstar,metallicity,&
+       gamma_sigma,gamma_omega,irrchoice,Q_irr,T_irr, tstop,zpeb,beta_peb
 
   
   ! Loop over accretion rates
@@ -126,7 +142,7 @@ PROGRAM calc_pebble_accretion
            dlogrhodr = 0.0
         endif
 
-        eta(irad) = -0.5(H(irad)*H(irad))/(r(irad)*r(irad)) * dlogrhodr
+        eta(irad) = -0.5*(H(irad)*H(irad))/(r(irad)*r(irad)) * dlogrhodr
 
         ! Radial velocity of pebbles
         vrpeb(irad) = -2.0*eta(irad)*omega(irad)*r(irad)*tstop/(1.0 + tstop*tstop)
@@ -220,7 +236,7 @@ PROGRAM calc_pebble_accretion
         width_unstable = rmax_unstable - rmin_unstable
 
         ! Compute surface density of pebbles in here
-        sigma_p = mdotpebble/(2.0*pi*r(irmin_unstable)*vr(irmin_unstable))
+        sigma_p = mdotpebble/(2.0*pi*r(irmin_unstable)*vrpeb(irmin_unstable))
 
         ! Compute Pebble Accretion Rate for M= 1 Mjup
         ! Mdot = 2 R_H^2 omega tstop *sigma p

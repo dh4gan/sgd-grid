@@ -1,0 +1,8 @@
+Ms0.2.model	input filename
+Ms0.2.pebble	output file prefix
+1.0		Stopping time of pebbles (dimensionless)
+0.02		Dust to Gas Ratio
+10.0		beta_pebble: Dimensionless timescale for pebble growth
+100.0		Maximum radius for pebbles
+1.0		Planet mass for pebble accretion estimates (Mjup)
+

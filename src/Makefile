@@ -31,8 +31,14 @@ calc_observables: calc_observables.f90
 	 $(FC) $(FFLAGS) calc_observables.f90 -o calc_observables
 	rm -f calc_observables.o
 
+calc_pebble_accretion: calc_pebble_accretion.f90
+	$(FC) $(FFLAGS) calc_pebble_accretion.f90 -o calc_pebble_accretion
+	rm -f calc_pebble_accretion.o
+
+all : sgd_grid calc_observables calc_pebble_accretion
+
 # Clean statements:
 clean: 
-	\rm *.o *.mod sgd_grid calc_observables
+	\rm *.o *.mod sgd_grid calc_observables calc_pebble_accretion
 
 # End Makefile
