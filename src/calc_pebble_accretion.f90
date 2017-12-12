@@ -29,7 +29,7 @@ PROGRAM calc_pebble_accretion
   real, allocatable, dimension(:) :: r, sigma,cs,omega,alpha
   real, allocatable, dimension(:) :: H, eta, vrpeb, rhogas
 
-  integer :: ipebrad,npebrad, irmin_unstable,irmax_unstable, jrad, imax_peb
+  integer :: ipebrad,npebrad, irmin_unstable,irmax_unstable, jrad
   real :: tstop, zpeb, beta_peb, rmax_peb, mplanet, Hp_to_Hg, dlogrhodr
   
   real :: rpeb, rdotpeb, tpeb, mdotpebble, rhill, rhop_rhog
@@ -42,7 +42,6 @@ PROGRAM calc_pebble_accretion
   logical :: outer_radius
 
   character(3) :: imdot_char
-  character(14) :: mdot_char
   character(100) ::inputfile, outputprefix, outputlog, output_mdotfile
 
   ! Get input parameters and set up header:
@@ -109,6 +108,8 @@ PROGRAM calc_pebble_accretion
   !dr = dr*udist
   npebrad = int(rmax_peb/dr) + 1
 
+  if(npebrad > nrad) npebrad = nrad
+
   ! Write header for log output file
   OPEN(20,file=outputlog,status='unknown')
   write(20,*) nrad,nmdot,rmin,rmax,mdotmin,mdotmax,Mstar,metallicity,&
@@ -157,9 +158,9 @@ PROGRAM calc_pebble_accretion
 
         ! Radial velocity of pebbles
         vrpeb(irad) = 2.0*eta(irad)*omega(irad)*r(irad)*tstop/(1.0 + tstop*tstop)
-
+        write(76,*) r(irad)/udist, rhogas(irad)*cs(irad)*cs(irad), &
+             H(irad)/udist, rhogas(irad), dlogrhodr, eta(irad), (r(irad)/vrpeb(irad))/3.15e7
      enddo
-
 
      !******************************************************************
      ! 2. Now compute pebble accretion properties as a function of rpeb
@@ -243,7 +244,6 @@ PROGRAM calc_pebble_accretion
 
         enddo
 
-        !print*, 'out', irmin_unstable, irmax_unstable
         ! If streaming zone goes right to pebble front, make sure outer radius is found
        if (inner_radius.eqv. .true. .and. outer_radius.eqv..false.) then           
           rmax_unstable = r(ipebrad)
@@ -263,51 +263,52 @@ PROGRAM calc_pebble_accretion
         if(width_unstable > 0.0) then
 
            h_unstable = H(irmin_unstable)/rmin_unstable
-        ! Compute surface density of pebbles in here
-        sigma_p = mdotpebble/(2.0*pi*r(irmin_unstable)*vrpeb(irmin_unstable))
 
-       ! print*, rmin_unstable/udist, rmax_unstable/udist, sigma(irmin_unstable), sigma_p
-        ! Compute Pebble Accretion Rate for M= 1 Mjup
-        ! Mdot = 2 R_H^2 omega tstop *sigma p
+           ! Compute surface density of pebbles in here
+           sigma_p = mdotpebble/(2.0*pi*r(irmin_unstable)*vrpeb(irmin_unstable))
 
-        rhill = rmin_unstable*(mplanet/(3.0*mstar))**0.333
+           ! Compute Pebble Accretion Rate for M= 1 Mjup
+           ! Mdot = 2 R_H^2 omega tstop *sigma p
 
-        !print*, rmin_unstable/udist, rhill/udist, mplanet, mstar
+           rhill = rmin_unstable*(mplanet/(3.0*mstar))**0.333
 
-        planet_pebaccrete = 2.0* rhill*rhill*omega(irmin_unstable)*(tstop**0.66666)*sigma_p
+           !print*, rmin_unstable/udist, rhill/udist, mplanet, mstar
 
-        if(planet_pebaccrete>mdotpebble) planet_pebaccrete = mdotpebble
+           planet_pebaccrete = 2.0* rhill*rhill*omega(irmin_unstable)*(tstop**0.66666)*sigma_p
 
-        ! compute pebble accretion efficiency
-        eff_pebble = planet_pebaccrete/mdotpebble
+           if(planet_pebaccrete>mdotpebble) planet_pebaccrete = mdotpebble
 
-        ! Compute crossing mass at this rpeb
-        mcross = sqrt(3.0*pi*width_unstable*alpha(irmin_unstable)*mdotpebble*eff_pebble/&
-             (rmin_unstable*mdotvisc*gamma1))*h_unstable * h_unstable* Mstar
+           ! compute pebble accretion efficiency
+           eff_pebble = planet_pebaccrete/mdotpebble
 
-        write(*,'(10(1P,e8.1,1X))'), mcross/mjup, eta(irmin_unstable)/(h_unstable*h_unstable), &
-             width_unstable/udist, H(irmin_unstable)/r(irmin_unstable),mdotpebble/mdotvisc, &
-             alpha(irmin_unstable), mdotpebble, eff_pebble, mdotvisc, Mstar/umass
-        ! Check if accretion rate is at a maximum
-        if(planet_pebaccrete > planet_accretemax) then
-           planet_accretemax = planet_pebaccrete
-           rpeb_accretemax = rpeb
-           tpeb_accretemax = tpeb
-           mcross_accretemax = mcross
-           eff_accretemax = eff_pebble
-        endif
+           ! Compute crossing mass at this rpeb
+           mcross = sqrt(3.0*pi*width_unstable*alpha(irmin_unstable)*mdotpebble*eff_pebble/&
+                (rmin_unstable*mdotvisc*gamma1))*h_unstable * h_unstable* Mstar
+
+           !write(*,'(10(1P,e8.1,1X))'), mcross/mjup, &
+           !     width_unstable/udist, H(irmin_unstable)/r(irmin_unstable),mdotpebble/mdotvisc, &
+           !     alpha(irmin_unstable), mdotpebble, eff_pebble, mdotvisc, Mstar/umass
+           
+           ! Check if accretion rate is at a maximum
+           if(planet_pebaccrete > planet_accretemax) then
+              planet_accretemax = planet_pebaccrete
+              rpeb_accretemax = rpeb
+              tpeb_accretemax = tpeb
+              mcross_accretemax = mcross
+              eff_accretemax = eff_pebble
+           endif
 
 
-        !****************************
-        ! 4. Write output data to files
-        !****************************
+           !****************************
+           ! 4. Write output data to files
+           !****************************
 
-        ! Write to file for this rpeb
-        ! mdot rpeb --> mdotpebble, r1, r2, Mcross, Mpl
+           ! Write to file for this rpeb
+           ! mdot rpeb --> mdotpebble, r1, r2, Mcross, Mpl
         
-        write(30,*) mdotvisc*3.15e7/umass, rpeb/udist,tpeb/3.15e7, rdotpeb*3.15e7/udist, &
-             mdotpebble*3.15e7/mjup, rmin_unstable/udist, rmax_unstable/udist, &
-             mcross/mjup, planet_pebaccrete*3.15e7/mjup, eff_pebble
+           write(30,*) mdotvisc*3.15e7/umass, rpeb/udist,tpeb/3.15e7, rdotpeb*3.15e7/udist, &
+                mdotpebble*3.15e7/mjup, rmin_unstable/udist, rmax_unstable/udist, &
+                mcross/mjup, planet_pebaccrete*3.15e7/mjup, eff_pebble
         endif
      enddo
      close(30)
