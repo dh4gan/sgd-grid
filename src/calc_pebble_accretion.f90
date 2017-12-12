@@ -258,6 +258,8 @@ PROGRAM calc_pebble_accretion
 
         width_unstable = rmax_unstable - rmin_unstable
 
+        !if(width_unstable > 0.0) then
+
         ! Compute surface density of pebbles in here
         sigma_p = mdotpebble/(2.0*pi*r(irmin_unstable)*vrpeb(irmin_unstable))
 
@@ -273,12 +275,12 @@ PROGRAM calc_pebble_accretion
 
         ! compute pebble accretion efficiency
         eff_pebble = planet_pebaccrete/mdotpebble
-
+        !eff_pebble = 0.25
         ! Compute crossing mass at this rpeb
         mcross = sqrt(3.0*pi*width_unstable*alpha(irmin_unstable)*mdotpebble*eff_pebble/&
              (mdotvisc*gamma1))*(H(irmin_unstable)/r(irmin_unstable))**2 * Mstar
 
-
+        print*, width_unstable/udist, alpha(irmin_unstable), mdotpebble, eff_pebble, mdotvisc, Mstar
         ! Check if accretion rate is at a maximum
         if(planet_pebaccrete > planet_accretemax) then
            planet_accretemax = planet_pebaccrete
