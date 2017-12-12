@@ -3,3 +3,6 @@
 *.mod
 *.ps
 run_log
+src/calc_pebble_accretion
+src/sgd_grid
+src/calc_observables
