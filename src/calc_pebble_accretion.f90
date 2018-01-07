@@ -73,9 +73,9 @@ real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
   print*, 'Outputting pebble accretion data to files of prefix ', outputprefix
 
 
-  outputlog = trim(outputprefix)//".log"
+  outputlog = trim(outputprefix)//".mdotpebblelog"
   print*, "Log data for all gas accretion rates to be outputted to ", trim(outputlog)
-  print*, "Data for each accretion rate to be outputted to files of form ", trim(outputlog)//".mdot.<num>"
+  print*, "Data for each accretion rate to be outputted to files of form ", trim(outputlog)//".mdotpebble.<num>"
 
   !******************************************
   ! 1. Read in disc and recompute essential gas  properties
@@ -122,8 +122,8 @@ real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
 
   ! Write header for log output file
   OPEN(20,file=outputlog,status='unknown')
-  write(20,*) nrad,nmdot,rmin,rmax,mdotmin,mdotmax,Mstar,metallicity,&
-       gamma_sigma,gamma_omega,irrchoice,Q_irr,T_irr, tstop,zpeb,beta_peb
+  write(20,*) nrad,nmdot,rmin,rmax,mdotmin,mdotmax,Mstar,tstop,zpeb,beta_peb,&
+    metallicity,gamma_sigma,gamma_omega,irrchoice,Q_irr,T_irr,
 
   
   ! Loop over accretion rates
@@ -184,11 +184,11 @@ real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
      ! Specify outputfile for this accretion rate
 
      write(imdot_char, '(I3.3)') imdot
-     output_mdotfile = trim(outputprefix)//".mdot."//trim(imdot_char)
+     output_mdotfile = trim(outputprefix)//".mdotpebble."//trim(imdot_char)
 
      open(30, file=output_mdotfile, status='unknown')
-     write(30,*) mdotvisc
-
+     write(30,*) nrad,nmdot,rmin,rmax,mdotvisc,Mstar,tstop,zpeb,beta_peb,&
+    metallicity,gamma_sigma,gamma_omega,irrchoice,Q_irr,T_irr
      ! Variables store maximum value at this accretion rate
      planet_accretemax = 0.0
      rpeb_accretemax = 0.0
@@ -357,7 +357,7 @@ real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
            ! Write to file for this rpeb
            ! mdot rpeb --> mdotpebble, r1, r2, Mcross, Mpl
         
-           write(30,*) mdotvisc*3.15e7/umass, rpeb/udist,tpeb/3.15e7, rdotpeb*3.15e7/udist, &
+           write(30,*) rpeb/udist,tpeb/3.15e7, rdotpeb*3.15e7/udist, &
                 mdotpebble*3.15e7/mjup, rmin_unstable/udist, rmax_unstable/udist, &
                 mcross/mjup, planet_pebaccrete*3.15e7/mjup, eff_pebble
 
