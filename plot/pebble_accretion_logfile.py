@@ -9,9 +9,9 @@ import filefinder as ff
 
 # Set up tuples and dictionaries
 
-variablekeys = ("mdotgas","rpebmax","tpebmax","planetmdotpebmax","mcrossmax", "effmax")
-variablenames = ("$\dot{M}_{\rm gas}$","$r_{\rm peb,max}$", "$t_{\rm peb,max}$","$\dot{M}_{pl,max}$","$M_{\rm cross,max} (M_{\rm Jup})$","\epsilon_{\rm max}")
-variablecolumns = range(6)
+variablekeys = ("mdotgas","rpebmax","tpebmax","mdotpebmax","mcrossmax", "mjeansmax", "planetmdotpebmax", "effmax")
+variablenames = (r"$\dot{M}_{\rm gas}$",r"$r_{\rm peb,max}$ (AU)", "$t_{\rm peb,max}$ (yr)",r"$\dot{M}_{\rm peb,max}$",r"$M_{\rm cross,max} (M_{\rm Jup})$",r"$M_{\rm Jeans,max}$",  r"$\dot{M}_{pl,max}$ ",r"\epsilon_{\rm max}")
+variablecolumns = range(len(variablekeys))
 
 namedict = {}
 coldict = {}
@@ -22,7 +22,7 @@ for i in range(len(variablekeys)):
 
 # Find pebble accretion file
 
-filename = ff.find_local_input_files('*.mdotpebblelog')
+inputfile = ff.find_local_input_files('*.pebble.log')
 
 # Decide which variable to plot
 
@@ -83,12 +83,12 @@ for i in range(len(choices)):
 
     fig1 = plt.figure()
     ax = fig1.add_subplot(111)
-    ax.set_ylabel(namedict[choices[i])
+    ax.set_ylabel(namedict[choices[i]])
     ax.set_xlabel(namedict["mdotgas"])
-    ax.set_yscale('log')
-    ax.plot(data[:,coldict["mdotgas"]), data[:,coldict[choices[i]])
+    ax.set_xscale('log')
+    ax.plot(data[:,coldict["mdotgas"]], data[:,coldict[choices[i]]])
 
-    outputfile = filename+choices[i]+".png"
+    outputfile = choices[i]+"_"+inputfile+".png"
 
     fig1.savefig(outputfile)
 

@@ -4,6 +4,19 @@
 
 import glob
 import numpy as np
+import re
+
+def sort_nicely(l):
+    """
+    Sort the given list in a 'Natural' order
+    (Ned Batchelder's Compact Human Python Sort)
+    """
+    
+    convert = lambda text:int(text) if text.isdigit() else text
+    
+    alphanum_key = lambda key:[ convert(c) for c in re.split('([0-9]+)',key)]
+    
+    l.sort(key=alphanum_key)
 
 def find_local_input_files(stringmatch):
     '''Given a matching string (e.g. '*.txt') the function will create a list
@@ -33,6 +46,36 @@ def find_local_input_files(stringmatch):
     print 'File ',filename, ' selected for read-in'
     return filename 
 
+def find_sorted_local_input_files(stringmatch):
+    '''Given a matching string (e.g. '*.txt') the function will create a sorted list of matches for the user to select (or type in an alternative)'''
+    
+    print 'Searching local directory for input files'
+    filechoices = glob.glob(stringmatch)
+    
+    # Number of matches
+    nmatch = len(filechoices)
+    
+    print 'Detected ', nmatch, ' potential inputfiles in this directory'
+
+    # Sort using Natural sort (see function at top)
+    sort_nicely(filechoices)
+
+    print 'Here are the options: '
+    for i in range (nmatch):
+        print '(',i+1,'): ', filechoices[i]
+        
+    if(nmatch>0): print 'If none of these files suit:'
+    print '(',nmatch+1,'):  Manually enter a filename'
+    
+    userselect = input('Make a selection: ')
+    
+    if userselect==nmatch+1:
+        filename = raw_input('Manually enter filename: ')
+    else:
+        filename = filechoices[userselect-1]
+        
+    print 'File ',filename, ' selected for read-in'
+    return filename 
 
 def find_local_input_fileset(stringmatch):
     '''Given a matching string (e.g. '*.txt') the function will create a list
@@ -49,6 +92,27 @@ def find_local_input_fileset(stringmatch):
         print '(',i+1,'): ', filechoices[i]
         
     return filechoices
+
+def find_sorted_local_input_fileset(stringmatch):
+    '''Given a matching string (e.g. '*.txt') the function will create a sorted list
+    of all matches '''
+    
+    filechoices = glob.glob(stringmatch)
+    
+    # Number of matches
+    nmatch = len(filechoices)
+    
+    # Sort using Natural sort (see function at top)
+    sort_nicely(filechoices)
+    for i in range (nmatch):
+        print '(',i+1,'): ', filechoices[i]
+    
+    
+    print 'Detected ', nmatch, ' potential inputfiles in this directory'    
+    
+    
+    return filechoices
+    
 
 def decide_local_output_file(inputfile, stringmatch,fileformat='ps'):
     '''Given a matching string, the function gives a list of existing

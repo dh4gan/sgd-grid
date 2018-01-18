@@ -74,9 +74,9 @@ real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
   print*, 'Outputting pebble accretion data to files of prefix ', outputprefix
 
 
-  outputlog = trim(outputprefix)//".mdotpebblelog"
+  outputlog = trim(inputfile)//".pebble.log"
   print*, "Log data for all gas accretion rates to be outputted to ", trim(outputlog)
-  print*, "Data for each accretion rate to be outputted to files of form ", trim(outputlog)//".mdotpebble.<num>"
+  print*, "Data for each accretion rate to be outputted to files of form ", trim(inputfile)//"<num>.pebble"
 
   !******************************************
   ! 1. Read in disc and recompute essential gas  properties
@@ -175,8 +175,8 @@ real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
 
         ! Radial velocity of pebbles
         vrpeb(irad) = 2.0*eta(irad)*omega(irad)*r(irad)*tstop/(1.0 + tstop*tstop)
-        write(76,*) r(irad)/udist, rhogas(irad)*cs(irad)*cs(irad), &
-             H(irad)/udist, rhogas(irad), dlogrhodr, eta(irad), (r(irad)/vrpeb(irad))/3.15e7
+!        write(76,*) r(irad)/udist, rhogas(irad)*cs(irad)*cs(irad), &
+!             H(irad)/udist, rhogas(irad), dlogrhodr, eta(irad), (r(irad)/vrpeb(irad))/3.15e7
      enddo
 
      !******************************************************************
@@ -186,7 +186,7 @@ real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
      ! Specify outputfile for this accretion rate
 
      write(imdot_char, '(I3.3)') imdot
-     output_mdotfile = trim(outputprefix)//".mdotpebble."//trim(imdot_char)
+     output_mdotfile = trim(inputfile)//"."//trim(imdot_char)//".pebble"
 
      open(30, file=output_mdotfile, status='unknown')
      write(30,*) nrad,nmdot,rmin,rmax,mdotvisc,Mstar,tstop,zpeb,beta_peb,&
@@ -347,9 +347,9 @@ real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
            mcross = sqrt(3.0*pi*width_unstable*alpha(irmin_unstable)*mdotpebble*effpeb/&
                 (rmin_unstable*mdotvisc*gamma1))*h_unstable * h_unstable* Mstar
 
-           write(*,'(10(1P,e8.1,1X))'), mcross/mjup, &
-                width_unstable/udist, h_unstable,mdotpebble/mdotvisc, &
-                alpha(irmin_unstable), mdotpebble, effpeb, mdotvisc, Mstar/umass
+           !write(*,'(10(1P,e8.1,1X))'), mcross/mjup, &
+           !     width_unstable/udist, h_unstable,mdotpebble/mdotvisc, &
+           !     alpha(irmin_unstable), mdotpebble, effpeb, mdotvisc, Mstar/umass
 
 
         endif
@@ -378,7 +378,7 @@ real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
         
            write(30,*) rpeb/udist,tpeb/year, rdotpeb*year/udist, &
                 mdotpebble*year/mjup, rmin_unstable/udist, rmax_unstable/udist, &
-                mcross/mjup, mjeans(ipebrad),planet_pebaccrete*3.15e7/mjup, eff_pebble
+                mcross/mjup, mjeans(ipebrad),planet_pebaccrete*year/mjup, eff_pebble
 
      enddo
      close(30)

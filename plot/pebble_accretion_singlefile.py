@@ -6,12 +6,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 import filefinder as ff
 
+plt.rc('axes',labelsize=18)
 
 # Set up tuples and dictionaries
 
-variablekeys = ("rpeb","rdotpeb","mdotpeb","rmin_stream","rmax_stream","mcross", "planetmdotpeb","eff")
-variablenames = ("$r_{\rm peb}$", "$\dot{r}_{\rm peb}$","$\dot{M}_{\rm peb}\,(M_{\rm } \, \rm{yr}^{-1}$)","$r_{\rm min, stream}$","$r_{\rm max,stream}$","$M_{\rm cross} (M_{\rm Jup})$","\dot{M}_{pl}$", "\epsilon")
-variablecolumns = range(8)
+variablekeys = ("rpeb","tpeb","rdotpeb","mdotpeb","rmin_stream","rmax_stream","mcross","mjeans", "planetmdotpeb","planeteff")
+variablenames = (r"$r_{\rm peb}$ (AU)", r"$t_{\rm peb}$ (yr)",r"$\dot{r}_{\rm peb}$ (AU yr$^{-1}$)",r"$\dot{M}_{\rm peb}\,(M_{\rm } \, \rm{yr}^{-1}$)",r"$r_{\rm min, stream}$",r"$r_{\rm max,stream}$",r"$M_{\rm cross} (M_{\rm Jup})$",r"$M_{\rm jeans} (M_{\rm Jup})$ ",r"\dot{M}_{pl}$", "\epsilon")
+variablecolumns = range(len(variablekeys))
 
 namedict = {}
 coldict = {}
@@ -22,7 +23,7 @@ for i in range(len(variablekeys)):
 
 # Find pebble accretion file
 
-filename = ff.find_local_input_files('*.mdotpebble.*')
+filename = ff.find_sorted_local_input_files('*.pebble')
 
 # Decide which variable to plot
 
@@ -55,10 +56,10 @@ print "The following columns are to be plotted:"
 for i in range(len(choices)):
     print namedict[choices[i]],columns[i]
     
-print "Reading File ", inputfile
+print "Reading File ", filename
 
 # Read header first
-f = open(inputfile, 'r')
+f = open(filename, 'r')
 
 header = f.readline()
 headernums = header.split()
@@ -71,7 +72,7 @@ tstop = float(headernums[6])
 
 # Now read rest of file
 
-data = np.genfromtxt(inputfile, skiprows=1)
+data = np.genfromtxt(filename, skiprows=1)
 
 print "File Read"
 
@@ -84,12 +85,12 @@ for i in range(len(choices)):
 
     fig1 = plt.figure()
     ax = fig1.add_subplot(111)
-    ax.set_ylabel(namedict[choices[i])
+    ax.set_ylabel(namedict[choices[i]])
     ax.set_xlabel(namedict["rpeb"])
     ax.set_yscale('log')
-    ax.plot(data[:,coldict["rpeb"]), data[:,coldict[choices[i]])
+    ax.plot(data[:,coldict["rpeb"]], data[:,coldict[choices[i]]])
 
-    outputfile = filename+choices[i]+".png"
+    outputfile = choices[i]+"vs_rpeb"+filename+".png"
 
     fig1.savefig(outputfile)
 
@@ -102,11 +103,11 @@ fig1 = plt.figure()
 
 ax1 = fig1.add_subplot(111)
 
-ax1.plot(data[:,coldict["rpeb"]],data[:,coldict["rmin"])
-ax1.plot(data[:,coldict["rpeb"]],data[:,coldict["rmax"])
-ax1.set_xlabel(variablenames["rpeb"])
-ax1.set_ylabel("Streaming Instability Boundaries")
+ax1.plot(data[:,coldict["rpeb"]],data[:,coldict["rmin_stream"]], color='blue')
+ax1.plot(data[:,coldict["rpeb"]],data[:,coldict["rmax_stream"]],color = 'green')
+ax1.set_xlabel(namedict["rpeb"])
+ax1.set_ylabel("Streaming Instability Boundaries (AU)")
 
-outputfile = filename+"stream_limits.png"
-fig1.savefig(filename)
+outputfile = "stream_limits"+filename+".png"
+fig1.savefig(outputfile)
 
