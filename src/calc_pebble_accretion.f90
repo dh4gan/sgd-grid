@@ -3,7 +3,7 @@ PROGRAM calc_pebble_accretion
   ! self-gravitating disc models
   ! Assumes a dust temperature and opacity properties to do so
 
-  use eosdata, only: umass, udist
+  use eosdata, only: umass, udist,mH
   implicit none
 
   integer :: irad,imdot,irrchoice
@@ -16,7 +16,10 @@ PROGRAM calc_pebble_accretion
   real, parameter :: G = 6.67e-8
   real, parameter :: pi = 3.14159265285
   real, parameter :: twopi = 2.0*pi
+  real, parameter :: roottwopi = sqrt(twopi)
   real, parameter :: sigma_SB = 5.67e-5
+  real, parameter :: coll_H = 2e-15 ! Collisional cross section of H2
+  real, parameter :: mu = 2.4
   real, parameter :: c = 3.0e10
   real, parameter :: tolerance = 1.0e-5
   real, parameter :: Qfrag = 2.0
@@ -32,6 +35,7 @@ PROGRAM calc_pebble_accretion
 
   integer :: ipebrad,npebrad, irmin_unstable,irmax_unstable, jrad
   real :: tstop, zpeb, beta_peb, rmax_peb, mplanet, Hp_to_Hg, Hp, dlogrhodr
+  real :: grainsize, rhosolid,mfp
   
   real :: rpeb, rdotpeb, tpeb, mdotpebble, rhill, rhop_rhog
   real :: rmin_unstable, rmax_unstable, width_unstable, h_unstable
@@ -43,6 +47,7 @@ real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
   logical :: inner_radius
   logical :: outer_radius
 
+  character(1) :: fixparam
   character(3) :: imdot_char
   character(100) ::inputfile, outputprefix, outputlog, output_mdotfile
 
@@ -63,7 +68,10 @@ real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
   OPEN(10,file='calc_pebble_accretion.params', status='unknown')
   read(10,*) inputfile
   READ(10,*) outputprefix ! Prefix for output files 
+  read(10,*) fixparam ! Fix either tstop or grain size
   READ(10,*) tstop ! Stopping time (dimensionless)
+  read(10,*) grainsize ! Grain size (cm)
+  read(10,*) rhosolid ! Density of grains (g cm ^-3)
   read(10,*) zpeb ! Metallicity of disc
   read(10,*) beta_peb ! growth rate of pebbles t_peb = beta_peb *(zpeb*omega(irad)^-1
   read(10,*) rmax_peb ! Maximum radius to consider pebble accretion  (AU)
@@ -115,10 +123,7 @@ real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
   if(npebrad > nrad) npebrad = nrad
 
 
-  ! Convenience functions for calculating pebble accretion (Ida et al 2016)
-
-  zeta = 1/(1+tstop*tstop)
-  Chi = sqrt((1.0 + 4.0*tstop*tstop))/(1.0+tstop*tstop)
+ 
 
 
   ! Write header for log output file
@@ -226,7 +231,37 @@ real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
 
 !        print*, mdotvisc*3.15e7/umass, mstar/umass, rpeb/udist, tpeb/3.15e7, rdotpeb*3.15e7/udist, mdotpebble*3.15e7/umass
 
+        ! Compute stopping time/ grain size depending on inputs
 
+        ! Compute mean free path
+        mfp = sqrt(twopi)*mu*mH*H(ipebrad)/(coll_H*sigma(ipebrad))
+
+
+        ! If stopping time fixed
+        if(fixparam=='t') then
+
+           ! Calculate assuming Epstein drag, then check
+           grainsize = tstop*sigma(ipebrad)/(roottwopi*rhosolid)
+
+           ! If in Stokes regime, recompute
+           if(grainsize >= 9.0*mfp/4.0) then
+              grainsize = 9.0*mfp*sigma(ipebrad)*tstop/(4.0*roottwopi*rhosolid)
+              grainsize = sqrt(grainsize)
+
+           endif
+
+           ! Otherwise assume fixed grain size and compute tstop
+        else
+
+           if(grainsize<9.0*mfp/4.0) then
+              tstop = roottwopi*rhosolid*grainsize/sigma(ipebrad)
+           else
+              tstop = 4.0*roottwopi*rhosolid*grainsize*grainsize &
+                   /(9.0*mfp*sigma(ipebrad))
+
+           endif
+
+        endif
         !*************************************************************
         ! 3 Compute the pebble accretion rate of any fragment present
         ! (according to equations of Ida et al (2016)
@@ -235,6 +270,12 @@ real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
         planet_pebaccrete = 0.0
         eff_pebble = 0.0
         if (mjeans(ipebrad)>0.0) then
+
+           ! Convenience functions for calculating pebble accretion 
+           ! (Ida et al 2016)
+
+           zeta = 1/(1+tstop*tstop)
+           Chi = sqrt((1.0 + 4.0*tstop*tstop))/(1.0+tstop*tstop)
 
             Hp = sqrt(tstop/alpha(ipebrad))*(1 + tstop/alpha(ipebrad))**(-0.5) *H(ipebrad)
 
@@ -376,7 +417,7 @@ real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
            ! Write to file for this rpeb
            ! mdot rpeb --> mdotpebble, r1, r2, Mcross, Mpl
         
-           write(30,*) rpeb/udist,tpeb/year, rdotpeb*year/udist, &
+           write(30,*) rpeb/udist,grainsize,tstop,tpeb/year, rdotpeb*year/udist, &
                 mdotpebble*year/mjup, rmin_unstable/udist, rmax_unstable/udist, &
                 mcross/mjup, mjeans(ipebrad),planet_pebaccrete*year/mjup, eff_pebble
 
