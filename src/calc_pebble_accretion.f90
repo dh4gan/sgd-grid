@@ -22,6 +22,7 @@ PROGRAM calc_pebble_accretion
   real, parameter :: Qfrag = 2.0
   real, parameter :: mjup = 1.8986e30
   real, parameter :: mearth = 5.972e27
+  real, parameter :: year = 3.15e7
   real, parameter :: pc = 206265.0*1.496e13  ! Parsec in cm
   real, parameter :: gamma1 = 4.0
 
@@ -35,8 +36,8 @@ PROGRAM calc_pebble_accretion
   real :: rpeb, rdotpeb, tpeb, mdotpebble, rhill, rhop_rhog
   real :: rmin_unstable, rmax_unstable, width_unstable, h_unstable
 real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
-  real :: planet_pebaccrete, mcross, eff_pebble
-  real :: rpeb_accretemax, tpeb_accretemax
+  real :: planet_pebaccrete, mcross, eff_pebble, effpeb
+  real :: rpeb_accretemax, tpeb_accretemax, mdotpebble_accretemax, mjeans_accretemax
   real :: planet_accretemax, mcross_accretemax, eff_accretemax
 
   logical :: inner_radius
@@ -122,8 +123,9 @@ real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
 
   ! Write header for log output file
   OPEN(20,file=outputlog,status='unknown')
-  write(20,*) nrad,nmdot,rmin,rmax,mdotmin,mdotmax,Mstar,tstop,zpeb,beta_peb,&
-    metallicity,gamma_sigma,gamma_omega,irrchoice,Q_irr,T_irr,
+  write(20,*) nrad,nmdot,rmin,rmax,mdotmin,mdotmax,Mstar,&
+       tstop,zpeb,beta_peb,&
+       metallicity,gamma_sigma,gamma_omega,irrchoice,Q_irr,T_irr
 
   
   ! Loop over accretion rates
@@ -189,9 +191,13 @@ real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
      open(30, file=output_mdotfile, status='unknown')
      write(30,*) nrad,nmdot,rmin,rmax,mdotvisc,Mstar,tstop,zpeb,beta_peb,&
     metallicity,gamma_sigma,gamma_omega,irrchoice,Q_irr,T_irr
-     ! Variables store maximum value at this accretion rate
+
+     ! Variables store maximum values at this gas accretion rate
      planet_accretemax = 0.0
+     mjeans_accretemax = 0.0
+     mdotpebble_accretemax = 0.0
      rpeb_accretemax = 0.0
+     tpeb_accretemax = 0.0
      mcross_accretemax = 0.0
      eff_accretemax = 0.0
 
@@ -226,6 +232,8 @@ real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
         ! (according to equations of Ida et al (2016)
         !*************************************************************
 
+        planet_pebaccrete = 0.0
+        eff_pebble = 0.0
         if (mjeans(ipebrad)>0.0) then
 
             Hp = sqrt(tstop/alpha(ipebrad))*(1 + tstop/alpha(ipebrad))**(-0.5) *H(ipebrad)
@@ -319,7 +327,10 @@ real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
         ! Find width of unstable region 
 
         width_unstable = rmax_unstable - rmin_unstable
-       
+
+        h_unstable = 0.0
+        mcross = 0.0
+
         ! Only do the calculations for non-zero widths
         if(width_unstable > 0.0) then
 
@@ -327,12 +338,18 @@ real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
 
            ! Compute crossing mass at this rpeb (Ormel et al 2017)
 
-           mcross = sqrt(3.0*pi*width_unstable*alpha(irmin_unstable)*mdotpebble*eff_pebble/&
+           if(eff_pebble>0.0) then
+              effpeb = eff_pebble
+           else
+              effpeb = 0.1
+           endif
+
+           mcross = sqrt(3.0*pi*width_unstable*alpha(irmin_unstable)*mdotpebble*effpeb/&
                 (rmin_unstable*mdotvisc*gamma1))*h_unstable * h_unstable* Mstar
 
-           !write(*,'(10(1P,e8.1,1X))'), mcross/mjup, &
-           !     width_unstable/udist, H(irmin_unstable)/r(irmin_unstable),mdotpebble/mdotvisc, &
-           !     alpha(irmin_unstable), mdotpebble, eff_pebble, mdotvisc, Mstar/umass
+           write(*,'(10(1P,e8.1,1X))'), mcross/mjup, &
+                width_unstable/udist, h_unstable,mdotpebble/mdotvisc, &
+                alpha(irmin_unstable), mdotpebble, effpeb, mdotvisc, Mstar/umass
 
 
         endif
@@ -346,6 +363,8 @@ real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
         ! Check if accretion rate is at a maximum
         if(planet_pebaccrete > planet_accretemax) then
               planet_accretemax = planet_pebaccrete
+              mjeans_accretemax = mjeans(ipebrad)
+              mdotpebble_accretemax = mdotpebble
               rpeb_accretemax = rpeb
               tpeb_accretemax = tpeb
               mcross_accretemax = mcross
@@ -357,18 +376,19 @@ real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
            ! Write to file for this rpeb
            ! mdot rpeb --> mdotpebble, r1, r2, Mcross, Mpl
         
-           write(30,*) rpeb/udist,tpeb/3.15e7, rdotpeb*3.15e7/udist, &
-                mdotpebble*3.15e7/mjup, rmin_unstable/udist, rmax_unstable/udist, &
-                mcross/mjup, planet_pebaccrete*3.15e7/mjup, eff_pebble
+           write(30,*) rpeb/udist,tpeb/year, rdotpeb*year/udist, &
+                mdotpebble*year/mjup, rmin_unstable/udist, rmax_unstable/udist, &
+                mcross/mjup, mjeans(ipebrad),planet_pebaccrete*3.15e7/mjup, eff_pebble
 
      enddo
      close(30)
 
      ! Now write log file for this mdot
      ! mdot: maximum mdotp, rg(max mdotp), Mcross(max mdotp), efficiency
-     write(20,*) mdotvisc*3.15e7/umass, rpeb_accretemax/udist, tpeb_accretemax/3.15e7, &
-          planet_accretemax*3.15e7/mjup, &
-          mcross_accretemax/mjup, eff_accretemax
+     write(20,*) mdotvisc*year/umass, rpeb_accretemax/udist, tpeb_accretemax/3.15e7, &
+          mdotpebble_accretemax*year/mjup, mcross_accretemax/mjup, &
+          mjeans_accretemax, planet_accretemax*year/mjup, &
+          eff_accretemax
 
   enddo
         
