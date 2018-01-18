@@ -29,6 +29,7 @@ PROGRAM calc_pebble_accretion
   real, parameter :: pc = 206265.0*1.496e13  ! Parsec in cm
   real, parameter :: gamma1 = 4.0
 
+
   integer, allocatable,dimension(:) :: stream_unstable
   real, allocatable, dimension(:) :: r, sigma,cs,omega,alpha,mjeans
   real, allocatable, dimension(:) :: H, eta, vrpeb, rhogas,etadash
@@ -48,8 +49,7 @@ real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
   logical :: outer_radius
 
   character(1) :: fixparam
-  character(3) :: imdot_char
-  character(100) ::inputfile, outputprefix, outputlog, output_mdotfile
+  character(100) ::inputfile, outputfile, outputlog
 
   ! Get input parameters and set up header:
   print*, " "
@@ -67,7 +67,7 @@ real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
 
   OPEN(10,file='calc_pebble_accretion.params', status='unknown')
   read(10,*) inputfile
-  READ(10,*) outputprefix ! Prefix for output files 
+  READ(10,*) outputfile ! Output file name
   read(10,*) fixparam ! Fix either tstop or grain size
   READ(10,*) tstop ! Stopping time (dimensionless)
   read(10,*) grainsize ! Grain size (cm)
@@ -79,12 +79,10 @@ real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
   close(10)
 
   print*, 'Reading file ', inputfile
-  print*, 'Outputting pebble accretion data to files of prefix ', outputprefix
+  print*, 'Outputting pebble accretion data to file ', outputfile
 
-
-  outputlog = trim(inputfile)//".pebble.log"
-  print*, "Log data for all gas accretion rates to be outputted to ", trim(outputlog)
-  print*, "Data for each accretion rate to be outputted to files of form ", trim(inputfile)//"<num>.pebble"
+  outputlog = trim(outputfile)//".max"
+  print*, "Maximal pebble accretion data per gas accretion rates to be written to ", trim(outputlog)
 
   !******************************************
   ! 1. Read in disc and recompute essential gas  properties
@@ -123,16 +121,18 @@ real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
   if(npebrad > nrad) npebrad = nrad
 
 
- 
+  ! Write header for main output file
+  open(30, file=outputfile, status='unknown')
+  write(30,*) npebrad,nmdot,rmin,rmax,Mstar,fixparam,zpeb,beta_peb,&
+       metallicity,gamma_sigma,gamma_omega,irrchoice,Q_irr,T_irr
 
-
-  ! Write header for log output file
+  ! Write header for global maxima output file
   OPEN(20,file=outputlog,status='unknown')
   write(20,*) nrad,nmdot,rmin,rmax,mdotmin,mdotmax,Mstar,&
        tstop,zpeb,beta_peb,&
        metallicity,gamma_sigma,gamma_omega,irrchoice,Q_irr,T_irr
 
-  
+
   ! Loop over accretion rates
   DO imdot = 1, nmdot
 
@@ -188,14 +188,7 @@ real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
      ! 2. Now compute pebble accretion properties as a function of rpeb
      !******************************************************************
 
-     ! Specify outputfile for this accretion rate
-
-     write(imdot_char, '(I3.3)') imdot
-     output_mdotfile = trim(inputfile)//"."//trim(imdot_char)//".pebble"
-
-     open(30, file=output_mdotfile, status='unknown')
-     write(30,*) nrad,nmdot,rmin,rmax,mdotvisc,Mstar,tstop,zpeb,beta_peb,&
-    metallicity,gamma_sigma,gamma_omega,irrchoice,Q_irr,T_irr
+   
 
      ! Variables store maximum values at this gas accretion rate
      planet_accretemax = 0.0
@@ -207,7 +200,7 @@ real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
      eff_accretemax = 0.0
 
      ! convert mdot into cgs
-     mdotvisc = mdotvisc*umass/3.15e7
+     mdotvisc = mdotvisc*umass/year
 
      ! Now loop again over radius, where radius now refers to rpeb
 
@@ -235,7 +228,6 @@ real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
 
         ! Compute mean free path
         mfp = sqrt(twopi)*mu*mH*H(ipebrad)/(coll_H*sigma(ipebrad))
-
 
         ! If stopping time fixed
         if(fixparam=='t') then
@@ -292,7 +284,7 @@ real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
             bcross_reduce = bcross_reduce*2.0*tstop**0.333*rhill_reduce
             bcross = bcross_reduce*r(ipebrad)
 
-            ! Now compute fragment pebble accretion rate
+            ! Now compute disc fragment's pebble accretion rate
 
             planet_pebaccrete = sqrt(8.0/pi)*Hp/bcross
 
@@ -414,18 +406,16 @@ real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
 
 
 
-           ! Write to file for this rpeb
-           ! mdot rpeb --> mdotpebble, r1, r2, Mcross, Mpl
-        
-           write(30,*) rpeb/udist,grainsize,tstop,tpeb/year, rdotpeb*year/udist, &
-                mdotpebble*year/mjup, rmin_unstable/udist, rmax_unstable/udist, &
+           ! Write to main output file
+           write(30,*) mdotvisc*year/umass, rpeb/udist,grainsize,tstop,tpeb/year, &
+                rdotpeb*year/udist, mdotpebble*year/mjup, &
+                rmin_unstable/udist, rmax_unstable/udist, &
                 mcross/mjup, mjeans(ipebrad),planet_pebaccrete*year/mjup, eff_pebble
 
      enddo
-     close(30)
 
-     ! Now write log file for this mdot
-     ! mdot: maximum mdotp, rg(max mdotp), Mcross(max mdotp), efficiency
+     ! Now write to global maxima file for this mdot
+     
      write(20,*) mdotvisc*year/umass, rpeb_accretemax/udist, tpeb_accretemax/3.15e7, &
           mdotpebble_accretemax*year/mjup, mcross_accretemax/mjup, &
           mjeans_accretemax, planet_accretemax*year/mjup, &
@@ -434,7 +424,6 @@ real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
   enddo
         
 close(20)
-
-!END of program
+close(30)
 
 end PROGRAM calc_pebble_accretion
