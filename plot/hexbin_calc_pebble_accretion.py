@@ -13,8 +13,8 @@ import filefinder as ff
 # Set up tuples and dictionaries
 
 
-variablekeys = ("grainsize", "tstop","tpeb","rdotpeb","mdotpeb","rmin_stream","rmax_stream","mcross","mjeans", "planetmdotpeb","planeteff")
-variablenames = (r"$s$ (cm)", r"$\tau_s$",r"$t_{\rm peb}$ (yr)",r"$\dot{r}_{\rm peb}$ (AU yr$^{-1}$)",r"$\dot{M}_{\rm peb}\,(M_{\rm } \, \rm{yr}^{-1}$)",r"$r_{\rm min, stream}$",r"$r_{\rm max,stream}$",r"$M_{\rm cross} (M_{\rm Jup})$",r"$M_{\rm jeans} (M_{\rm Jup})$ ",r"$\dot{M}_{pl}$", r"$\epsilon$")
+variablekeys = ("grainsize", "tstop","tstopratio","tpeb","rdotpeb","mdotpeb","rmin_stream","rmax_stream","mcross","mjeans", "planetmdotpeb","planeteff")
+variablenames = (r"$s$ (cm)", r"$\tau_s$",r"$\tau_s/\tau_{s,max}$",r"$t_{\rm peb}$ (yr)",r"$\dot{r}_{\rm peb}$ (AU yr$^{-1}$)",r"$\dot{M}_{\rm peb}\,(M_{\rm } \, \rm{yr}^{-1}$)",r"$r_{\rm min, stream}$",r"$r_{\rm max,stream}$",r"$M_{\rm cross} (M_{\rm Jup})$",r"$M_{\rm jeans} (M_{\rm Jup})$ ",r"$\dot{M}_{pl}$", r"$\epsilon$")
 variablecolumns = range(2,len(variablekeys)+2)
 
 namedict = {}
@@ -101,20 +101,16 @@ for i in range(len(choices)):
     #radplot = rad[indices]
     #mdotplot = mdot[indices]
     #plotdata = plotdata[indices] # Delete all nonsensical data!
-
-
-#    if choices[i]=='mjeans':
-#        plotdata = plotdata*0.000954        
-        
-#    if choices[i]=='h':
-#        plotdata = plotdata/radplot
     
     plotmin = np.amin(plotdata)
     plotmax = np.amax(plotdata)
     
     
-    
     print 'min, max: ',plotmin,plotmax
+
+    if choices[i]=='tstopratio':
+        plotmin = 0.0
+        plotmax = 1.0
 #    if choices[i]=='mjeans':
         #plotmin = 0.08
 #        plotmax = 0.35
