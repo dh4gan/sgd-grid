@@ -36,7 +36,7 @@ PROGRAM calc_pebble_accretion
 
   integer :: ipebrad,npebrad, irmin_unstable,irmax_unstable, jrad
   real :: tstop, zpeb, beta_peb, rmax_peb, mplanet, Hp_to_Hg, Hp, dlogrhodr
-  real :: grainsize, rhosolid,mfp,tstop_frag
+  real :: grainsize, rhosolid,mfp,tstop_frag, maxgrainsize
   
   real :: rpeb, rdotpeb, tpeb, mdotpebble, rhill, rhop_rhog
   real :: rmin_unstable, rmax_unstable, width_unstable, h_unstable
@@ -274,6 +274,17 @@ real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
 
         tstop_frag = vfrag*vfrag/(alpha(ipebrad)*cs(ipebrad)*cs(ipebrad))
 
+        ! Calculate maximum grain size
+
+        ! Calculate assuming Epstein drag, then check
+        maxgrainsize = tstop_frag*sigma(ipebrad)/(roottwopi*rhosolid)
+
+           ! If in Stokes regime, recompute
+           if(maxgrainsize >= 9.0*mfp/4.0) then
+              maxgrainsize = 9.0*mfp*sigma(ipebrad)*tstop_frag/(4.0*roottwopi*rhosolid)
+              maxgrainsize = sqrt(grainsize)
+           endif
+
         if (tstop < tstop_frag) then
 
            !*************************************************************
@@ -418,7 +429,8 @@ real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
 
 
            ! Write to main output file
-           write(30,*) mdotvisc*year/umass, rpeb/udist,grainsize,tstop,tstop/tstop_frag,tpeb/year, &
+           write(30,*) mdotvisc*year/umass, rpeb/udist,grainsize,tstop,&
+                tstop/tstop_frag,maxgrainsize,tpeb/year, &
                 rdotpeb*year/udist, mdotpebble*year/mjup, &
                 rmin_unstable/udist, rmax_unstable/udist, &
                 mcross/mjup, mjeans(ipebrad),planet_pebaccrete*year/mjup, eff_pebble

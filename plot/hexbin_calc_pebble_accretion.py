@@ -13,8 +13,8 @@ import filefinder as ff
 # Set up tuples and dictionaries
 
 
-variablekeys = ("grainsize", "tstop","tstopratio","tpeb","rdotpeb","mdotpeb","rmin_stream","rmax_stream","mcross","mjeans", "planetmdotpeb","planeteff")
-variablenames = (r"$s$ (cm)", r"$\tau_s$",r"$\tau_s/\tau_{s,max}$",r"$t_{\rm peb}$ (yr)",r"$\dot{r}_{\rm peb}$ (AU yr$^{-1}$)",r"$\dot{M}_{\rm peb}\,(M_{\rm } \, \rm{yr}^{-1}$)",r"$r_{\rm min, stream}$",r"$r_{\rm max,stream}$",r"$M_{\rm cross} (M_{\rm Jup})$",r"$M_{\rm jeans} (M_{\rm Jup})$ ",r"$\dot{M}_{pl}$", r"$\epsilon$")
+variablekeys = ("grainsize", "tstop","tstopratio","maxgrainsize","tpeb","rdotpeb","mdotpeb","rmin_stream","rmax_stream","mcross","mjeans", "planetmdotpeb","planeteff")
+variablenames = (r"$s$ (cm)", r"$\tau_s$",r"$\tau_s/\tau_{s,max}$",r"$s_{\rm max}$ cm",r"$t_{\rm peb}$ (yr)",r"$\dot{r}_{\rm peb}$ (AU yr$^{-1}$)",r"$\dot{M}_{\rm peb}\,(M_{\rm } \, \rm{yr}^{-1}$)",r"$r_{\rm min, stream}$",r"$r_{\rm max,stream}$",r"$M_{\rm cross} (M_{\rm Jup})$",r"$M_{\rm jeans} (M_{\rm Jup})$ ",r"$\dot{M}_{pl}$", r"$\epsilon$")
 variablecolumns = range(2,len(variablekeys)+2)
 
 namedict = {}
