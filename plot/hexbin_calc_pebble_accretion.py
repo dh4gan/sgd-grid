@@ -7,27 +7,21 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import sys
 
-#sys.path.append('/data/dhf3/programs/python/filefinder')
 import filefinder as ff
 
 # Set up tuples and dictionaries
 
-
 variablekeys = ("grainsize", "tstop","tstopratio","maxgrainsize","tpeb","rdotpeb","mdotpeb","rmin_stream","rmax_stream","mcross","mjeans", "planetmdotpeb","planeteff")
-variablenames = (r"$s$ (cm)", r"$\tau_s$",r"$\tau_s/\tau_{s,max}$",r"$s_{\rm max}$ cm",r"$t_{\rm peb}$ (yr)",r"$\dot{r}_{\rm peb}$ (AU yr$^{-1}$)",r"$\dot{M}_{\rm peb}\,(M_{\rm } \, \rm{yr}^{-1}$)",r"$r_{\rm min, stream}$",r"$r_{\rm max,stream}$",r"$M_{\rm cross} (M_{\rm Jup})$",r"$M_{\rm jeans} (M_{\rm Jup})$ ",r"$\dot{M}_{pl}$", r"$\epsilon$")
+variablenames = (r"$s$ (cm)", r"$\tau_s$",r"$\tau_s/\tau_{s,max}$",r"$s_{\rm max}$ cm",r"$t_{\rm peb}$ (yr)",r"$\dot{r}_{\rm peb}$ (AU yr$^{-1}$)",r"$\dot{M}_{\rm peb}\,(M_{\rm Jup} \, \rm{yr}^{-1}$)",r"$r_{\rm min, stream}$",r"$r_{\rm max,stream}$",r"$M_{\rm cross} (M_{\rm Jup})$",r"$M_{\rm jeans} (M_{\rm Jup})$ ",r"$\dot{M}_{pl}\,(M_{\rm Jup} \, \rm{yr}^{-1})$", r"$\epsilon$")
 variablecolumns = range(2,len(variablekeys)+2)
 
 namedict = {}
 coldict = {}
 
-print variablecolumns
-
 for i in variablecolumns:
 
     namedict[variablekeys[i-2]] = variablenames[i-2]
     coldict[variablekeys[i-2]] = i
-    print i, variablekeys[i-2], variablenames[i-2]
-
 
 # Read in filename
 inputfile = ff.find_sorted_local_input_files('*.pebble')
@@ -60,7 +54,7 @@ for word in choices:
 
 print "The following columns are to be plotted:"
 for i in range(len(choices)):
-    print namedict[choices[i]],columns[i]
+    print choices[i]
     
 print "Reading File ", inputfile
 
@@ -84,6 +78,9 @@ print "File Read"
 rad = data[:,1]
 mdot = data[:,0]
 
+# Some plots will have log scale colorbars
+
+
 # Now loop over choices
 
 for i in range(len(choices)):
@@ -101,29 +98,19 @@ for i in range(len(choices)):
     #radplot = rad[indices]
     #mdotplot = mdot[indices]
     #plotdata = plotdata[indices] # Delete all nonsensical data!
-    
+    logscaleplot = choices[i]=='grainsize' or choices[i]=='planetmdotpeb' or choices[i]=='mdotpeb' or choices[i]=='maxgrainsize' or choices[i]=='mcross'
+
+    # If plotting data on log scale
+    if(logscaleplot):
+        radplot = radplot[np.nonzero(plotdata)]
+        mdotplot = mdotplot[np.nonzero(plotdata)]
+        plotdata = np.log10(plotdata[np.nonzero(plotdata)])
+
     plotmin = np.amin(plotdata)
     plotmax = np.amax(plotdata)
     
-    
     print 'min, max: ',plotmin,plotmax
-
-    if choices[i]=='tstopratio':
-        plotmin = 0.0
-        plotmax = 1.0
-#    if choices[i]=='mjeans':
-        #plotmin = 0.08
-#        plotmax = 0.35
-    
-#    if choices[i]=='q':
-#        plotmin = 0.1
-#        plotmax = 1.0 
         
-#    if choices[i]=='temp':
-#        plotmin = 50.0           
-    
-#    print plotmin, plotmax
-    
     if(plotmin == plotmax):
         print "Skipping plot: plotmin=plotmax"
         print plotmin, plotmax
@@ -132,15 +119,16 @@ for i in range(len(choices)):
     
     # Make plot
     
-    fig1 = plt.figure()
+    fig1 = plt.figure(figsize=(10,8))
     ax = fig1.add_subplot(111)
     ax.set_ylabel(r"Gas Accretion Rate, $\mathrm{(M_{\odot} yr^{-1})}$", fontsize=20)
-    ax.set_xlabel(r"$r_{out}$ (AU)", fontsize = 20)
+    ax.set_xlabel(r"$r_{\rm out}$ (AU)", fontsize = 20)
     ax.set_yscale('log')
     plt.hexbin(radplot,mdotplot,C=plotdata,gridsize = int(nrad*0.25), vmin = plotmin, vmax = plotmax, yscale='log',mincnt = 1,cmap='Blues')
 
-    if(choices[i]=='mjeans'):
-	ax.set_ylim(3e-5,1e-3)    
+    ax.tick_params(axis='both',labelsize=16)
+    #if(choices[i]=='mjeans'):
+    #ax.set_ylim(3e-5,1e-3)    
 
     # Add a hatched background where model does not return a value
     ax.set_axis_bgcolor('gray')
@@ -155,6 +143,13 @@ for i in range(len(choices)):
 
     cb = plt.colorbar()
     cb.set_label(namedict[choices[i]], fontsize=20)
+
+    # If log scale plot, adjust colorbar labels: 10^val etc
+    if(logscaleplot):
+        tickvals = np.round(np.log10(cb.ax.get_yticks()),decimals=2)
+        ticklabels = [r"$10^{"+str(val)+"}$" for val in tickvals]
+        cb.ax.set_yticklabels(ticklabels,fontsize=18)
+
     #plt.title(namedict[choices[i]])
     outputfile = "mdot_r_"+choices[i]+'.png'
     plt.savefig(outputfile, format = 'png')
