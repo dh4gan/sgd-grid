@@ -94,7 +94,7 @@ for i in range(len(choices)):
   
     ax.plot(data[:,coldict["mdotgas"]], data[:,coldict[choices[i]]])
     ax.tick_params(axis='both',labelsize=16)
-    outputfile = choices[i]+".png"
+    outputfile = choices[i]+"_"+inputfile+".png"
 
     fig1.savefig(outputfile)
 

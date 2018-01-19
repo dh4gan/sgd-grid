@@ -157,5 +157,5 @@ for i in range(len(choices)):
         cb.ax.set_yticklabels(ticklabels,fontsize=18)
 
     #plt.title(namedict[choices[i]])
-    outputfile = "mdot_r_"+choices[i]+'.png'
+    outputfile = "mdot_r_"+choices[i]+"_"+inputfile+'.png'
     plt.savefig(outputfile, format = 'png')
