@@ -339,7 +339,7 @@ real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
            !print*, jrad, rhop_rhog, Hp_to_Hg, sigma(jrad), vrpeb(jrad)
            ! If rhop/rhog >1, mark this radius as streaming unstable region
            
-           if(rhop_rhog>1.0) then
+           if(rhop_rhog>1.0 .and.mjeans(jrad)<1.0e-30) then
               stream_unstable(jrad) = 1
               
               ! Record minimum and maximum values of streaming regions (assuming single region only
@@ -420,7 +420,7 @@ real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
         write(30,*) mdotvisc*year/umass, rpeb/udist,grainsize(ipebrad),tstop(ipebrad),&
              tstop(ipebrad)/tstop_frag(ipebrad),maxgrainsize(ipebrad),tpeb/year, &
              rdotpeb*year/udist, mdotpebble*year/mjup, &
-             rmin_unstable/udist, rmax_unstable/udist, &
+             width_unstable/udist, rmax_unstable/udist, &
              mcross/mjup, mjeans(ipebrad),planet_pebaccrete*year/mjup, eff_pebble
         
      enddo
