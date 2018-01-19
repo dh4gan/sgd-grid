@@ -11,14 +11,8 @@ PROGRAM sgd_grid
 
   integer :: frag,selfgrav,irad,imdot,irrchoice
   integer :: nrad, nmdot
-
-  real, parameter :: pi = 3.14159265285
-  real, parameter :: twopi = 2.0*pi
-  real, parameter :: sigma_SB = 5.67e-5
-  real,parameter :: c = 2.99e10
   real, parameter :: tolerance = 1.0e-5
   real, parameter :: Qfrag = 2.0
-  real, parameter :: mjup = 1.8986e30
   real,parameter :: Q_irrcrit = 1.99
   real,parameter :: alpha_sat = 0.1 ! Value of alpha at which self-gravity torque saturates
   real, parameter :: gamma_Jcrit = -5 ! Minimum GammaJ value to be exceeded for fragmentation
