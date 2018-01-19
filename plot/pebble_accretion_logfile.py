@@ -10,7 +10,7 @@ import filefinder as ff
 # Set up tuples and dictionaries
 
 variablekeys = ("mdotgas","rpebmax","tpebmax","mdotpebmax","mcrossmax", "mjeansmax", "planetmdotpebmax", "effmax")
-variablenames = (r"$\dot{M}_{\rm gas}$",r"$r_{\rm peb,max}$ (AU)", "$t_{\rm peb,max}$ (yr)",r"$\dot{M}_{\rm peb,max}$",r"$M_{\rm cross,max} (M_{\rm Jup})$",r"$M_{\rm Jeans,max}$",  r"$\dot{M}_{pl,max}$ ",r"\epsilon_{\rm max}")
+variablenames = (r"$\dot{M}_{\rm gas} \,(M_{\rm \odot}\,yr{-1})$",r"$r_{\rm peb,max}$ (AU)", r"$t_{\rm peb,max}$ (yr)",r"$\dot{M}_{\rm peb,max}$",r"$M_{\rm cross,max} (M_{\rm Jup})$",r"$M_{\rm Jeans,max}$",  r"$\dot{M}_{pl,max}$ ",r"\epsilon_{\rm max}")
 variablecolumns = range(len(variablekeys))
 
 namedict = {}
@@ -22,7 +22,7 @@ for i in range(len(variablekeys)):
 
 # Find pebble accretion file
 
-inputfile = ff.find_local_input_files('*.pebble.log')
+inputfile = ff.find_local_input_files('*.pebble.max')
 
 # Decide which variable to plot
 
@@ -66,7 +66,7 @@ headernums = header.split()
 nrad = int(headernums[0])
 nmdot = int(headernums[1])
 mstar = float(headernums[6])
-tstop = float(headernums[7])
+#tstop = float(headernums[7])
 
 # Now read rest of file
 
@@ -81,14 +81,20 @@ for i in range(len(choices)):
     # Extract data column and reshape
     print "Plotting ",namedict[choices[i]]
 
-    fig1 = plt.figure()
+    fig1 = plt.figure(figsize=(10,8))
     ax = fig1.add_subplot(111)
-    ax.set_ylabel(namedict[choices[i]])
-    ax.set_xlabel(namedict["mdotgas"])
+    ax.set_ylabel(namedict[choices[i]],fontsize=22)
+    ax.set_xlabel(namedict["mdotgas"],fontsize=22)
     ax.set_xscale('log')
-    ax.plot(data[:,coldict["mdotgas"]], data[:,coldict[choices[i]]])
 
-    outputfile = choices[i]+"_"+inputfile+".png"
+    logscaleplot = choices[i]=='mdotpebmax' or choices[i]=='planetmdotpebmax'
+           
+    if(logscaleplot):
+        ax.set_yscale('log')
+  
+    ax.plot(data[:,coldict["mdotgas"]], data[:,coldict[choices[i]]])
+    ax.tick_params(axis='both',labelsize=16)
+    outputfile = choices[i]+".png"
 
     fig1.savefig(outputfile)
 
