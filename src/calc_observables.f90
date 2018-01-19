@@ -26,7 +26,7 @@ PROGRAM calc_observables
   real :: Q_irr, T_irr, r, qratio,mtot
   real :: sigma, omega, T, cs,betac,alpha,dr
 
-  character(100) ::inputfile, outputfile
+  character(100) ::inputfile,inputprefix, outputfile
 
 
   ! Get input parameters and set up header:
@@ -44,7 +44,7 @@ PROGRAM calc_observables
   print*, " "
 
   OPEN(10,file='calc_observables.params', status='unknown')
-  read(10,*) inputfile
+  read(10,*) inputprefix
   READ(10,*) outputfile
   READ(10,*) distance
   READ(10,*) lambda
@@ -58,8 +58,9 @@ PROGRAM calc_observables
   lambda = lambda*1e-4
   lambda0 = lambda0*1e-4
  
-
+  inputfile = trim(inputprefix)//'.sgdmodel'
   print*, 'Reading file ', inputfile
+  outputfile = trim(inputprefix)//'.observe'
   print*, 'Outputting to file ', outputfile
 
   OPEN(10,file=inputfile ,status='unknown')

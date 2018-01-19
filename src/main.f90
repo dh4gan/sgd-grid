@@ -34,7 +34,7 @@ PROGRAM sgd_grid
   real :: TLin_constant
 
 
-  character(100) :: outputfile
+  character(100) :: outputprefix,outputfile
 
   ! Get input parameters and set up header:
   print*, " "
@@ -52,7 +52,7 @@ PROGRAM sgd_grid
   print*, " "
 
   OPEN(10,file='sgd_grid.params', status='unknown')
-  READ(10,*) outputfile
+  READ(10,*) outputprefix
   READ(10,*) nrad
   READ(10,*) nmdot
   READ(10,*) Mstar
@@ -69,6 +69,7 @@ PROGRAM sgd_grid
 
   close(10)
 
+  outputfile = trim(outputprefix)//'.sgdmodel'
   print*, 'Outputting to file ', outputfile
   print*, 'Mstar (msol) ', Mstar
   print*, 'Radial Limits: ', rmin, rmax

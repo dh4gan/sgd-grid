@@ -9,7 +9,7 @@
 
 # Compiler variables for WKMR/DHF:
 FC     = gfortran
-FFLAGS = -O3 -frecord-marker=4 -fdefault-real-8 -Wunused 
+FFLAGS = -O3 -frecord-marker=4 -fdefault-real-8 -Wunused -fbounds-check
 
 # Create object files:
 %.o: %.f

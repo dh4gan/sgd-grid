@@ -41,7 +41,7 @@ real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
   logical :: outer_radius
 
   character(1) :: fixparam
-  character(100) ::inputfile, outputfile, outputlog
+  character(100) ::inputfile, inputprefix,outputfile, outputlog
 
   ! Get input parameters and set up header:
   print*, " "
@@ -58,8 +58,7 @@ real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
   print*, " "
 
   OPEN(10,file='calc_pebble_accretion.params', status='unknown')
-  read(10,*) inputfile
-  READ(10,*) outputfile ! Output file name
+  read(10,*) inputprefix
   read(10,*) fixparam ! Fix either tstop or grain size
   READ(10,*) tstop_in ! Input Stopping time (dimensionless)
   read(10,*) grainsize_in ! Input Grain size (cm)
@@ -70,7 +69,9 @@ real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
   read(10,*) mplanet ! Typical planet mass for pebble accretion (Jupiter masses)
   close(10)
 
+  inputfile = trim(inputprefix)//'.sgdmodel'
   print*, 'Reading file ', inputfile
+  outputfile = trim(inputprefix)//'.pebble'
   print*, 'Outputting pebble accretion data to file ', outputfile
 
   outputlog = trim(outputfile)//".max"
@@ -79,7 +80,7 @@ real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
   !******************************************
   ! 1. Read in disc and recompute essential gas  properties
   !******************************************
-
+ 
   OPEN(10,file=inputfile ,status='unknown')
 
   ! Read input file header
@@ -112,7 +113,7 @@ real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
   ! Find index of maximum radius for pebble accretion (npebrad)
   dr = (rmax-rmin)/REAL(nrad)
   !dr = dr*udist
-  npebrad = int(rmax_peb/dr) + 1
+  npebrad = nrad
 
   if(npebrad > nrad) npebrad = nrad
 
@@ -131,6 +132,7 @@ real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
 
   ! Loop over accretion rates
   DO imdot = 1, nmdot
+
 
      r(:) = 0.0
      sigma(:) = 0.0
@@ -178,10 +180,6 @@ real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
 
         eta(irad) = -0.5*(H(irad)*H(irad))/(r(irad)*r(irad)) * dlogrhodr
 
-        ! Compute etadash function (for pebble accretion rates)
-        etadash(irad) = Chi*eta(irad)
-
-
      
 !        write(76,*) r(irad)/udist, rhogas(irad)*cs(irad)*cs(irad), &
 !             H(irad)/udist, rhogas(irad), dlogrhodr, eta(irad), (r(irad)/vrpeb(irad))/3.15e7
@@ -219,13 +217,18 @@ real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
         endif
 
         ! Now we have tstop, compute radial velocity of pebbles
-        vrpeb(irad) = 2.0*eta(irad)*omega(irad)*r(irad)*tstop(ipebrad)/(1.0 + tstop(irad)*tstop(irad))
+
+         Chi = sqrt((1.0 + 4.0*tstop(irad)*tstop(irad)))/(1.0+tstop(irad)*tstop(irad))
+          
+         ! Compute etadash function (for pebble accretion rates)
+         etadash(irad) = Chi*eta(irad)
+
+        vrpeb(irad) = 2.0*eta(irad)*omega(irad)*r(irad)*tstop(irad)/(1.0 + tstop(irad)*tstop(irad))
      enddo
 
      !******************************************************************
      ! 2. Now compute pebble accretion properties as a function of rpeb
      !******************************************************************
-   
 
      ! Variables store maximum values at this gas accretion rate
      planet_accretemax = 0.0
@@ -296,7 +299,7 @@ real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
               
            ! Compute cross section of pebble flow for accretion
               
-           bcross_reduce = 3*tstop(ipebrad)**0.333*rhill_reduce/etadash(irad)
+           bcross_reduce = 3*tstop(ipebrad)**0.333*rhill_reduce/etadash(ipebrad)
            
            if(bcross_reduce>1.0) bcross_reduce = 1.0
            
@@ -312,7 +315,7 @@ real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
            planet_pebaccrete = sqrt(pi/2)*(bcross*bcross/Hp)* &
                 mdotpebble/(4.0*pi*r(ipebrad)*tstop(ipebrad)*zeta)
            
-           planet_pebaccrete = planet_pebaccrete*Chi*(1.0+ 3*bcross_reduce/(2*Chi*eta(irad)))
+           planet_pebaccrete = planet_pebaccrete*Chi*(1.0+ 3*bcross_reduce/(2*Chi*eta(ipebrad)))
            
            if(planet_pebaccrete>mdotpebble) planet_pebaccrete = mdotpebble
            
