@@ -1,7 +1,9 @@
 PROGRAM calc_pebble_accretion
-  ! Program calculates observables for a grid of pre-generated
-  ! self-gravitating disc models
-  ! Assumes a dust temperature and opacity properties to do so
+  ! Program reads in output from sgd_grid
+  ! Computes properties of the disc related to pebble accretion:
+  ! i) Where streaming instability may occur, and
+  ! ii) Pebble accretion rates of fragments
+  ! Assumes either a fixed grain size or fixed dimensionless stopping time
 
   use eosdata
   implicit none
@@ -14,10 +16,7 @@ PROGRAM calc_pebble_accretion
   real :: Q_irr, T_irr,dr, rmax,rmin, betac
 
   real, parameter :: mu = 2.4
- 
-  real, parameter :: tolerance = 1.0e-5
-  real, parameter :: Qfrag = 2.0
- 
+  
   real, parameter :: gamma1 = 4.0
   real, parameter :: vfrag = 1.0e3 ! Empirically determined fragmentation velocity (cm/s)
 
@@ -32,7 +31,7 @@ PROGRAM calc_pebble_accretion
   
   real :: rpeb, rdotpeb, tpeb, mdotpebble, rhill, rhop_rhog
   real :: rmin_unstable, rmax_unstable, width_unstable, h_unstable
-real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
+  real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
   real :: planet_pebaccrete, mcross, eff_pebble, effpeb
   real :: rpeb_accretemax, tpeb_accretemax, mdotpebble_accretemax, mjeans_accretemax
   real :: planet_accretemax, mcross_accretemax, eff_accretemax
@@ -130,6 +129,10 @@ real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
        metallicity,gamma_sigma,gamma_omega,irrchoice,Q_irr,T_irr
 
 
+  !*******************************************************************
+  ! 1 Compute disc properties needed for pebble accretion calculations
+  !********************************************************************
+
   ! Loop over accretion rates
   DO imdot = 1, nmdot
 
@@ -167,9 +170,9 @@ real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
         rhogas(irad) = sigma(irad)/(2.0*H(irad))
         r(irad) = r(irad)*udist
                 
-        !************************************************************************
+        !**********************************************************************
         ! 1a  Calculate pressure gradient and eta - sub Keplerian parameter
-        !************************************************************************
+        !**********************************************************************
 
         if(irad>1) then
            dlogrhodr = (log(rhogas(irad)*cs(irad)*cs(irad)) - log(rhogas(irad-1)*cs(irad-1)*cs(irad-1)))/&
@@ -180,13 +183,9 @@ real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
 
         eta(irad) = -0.5*(H(irad)*H(irad))/(r(irad)*r(irad)) * dlogrhodr
 
-     
-!        write(76,*) r(irad)/udist, rhogas(irad)*cs(irad)*cs(irad), &
-!             H(irad)/udist, rhogas(irad), dlogrhodr, eta(irad), (r(irad)/vrpeb(irad))/3.15e7
-
-        !****************************************************************************
+        !*********************************************************************
         ! 1b Compute either grain size or stopping time depending on inputs
-        !****************************************************************************
+        !**********************************************************************
 
         ! Compute mean free path
         mfp = sqrt(twopi)*mu*mH*H(irad)/(coll_H*sigma(irad))
@@ -261,9 +260,6 @@ real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
         ! Compute mdotpebble (g s^-1)
         mdotpebble = 2.0*pi*rpeb*rdotpeb*zpeb*sigma(ipebrad)
 
-!        print*, mdotvisc*3.15e7/umass, mstar/umass, rpeb/udist, tpeb/3.15e7, rdotpeb*3.15e7/udist, mdotpebble*3.15e7/umass
-
-       
         ! Initialise parameters for calculation
         planet_pebaccrete = 0.0
         eff_pebble = 0.0
@@ -324,28 +320,30 @@ real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
            
         endif
         
-        !*************************************************************************
-        ! 4 Find regions where streaming instability permits planetesimal formation
-        !**************************************************************************
+        !**********************************************************************
+        ! 4 Find regions where streaming instability permits planetesimal growth
+        !**********************************************************************
         
         !*****************************************************************
         ! 4a Find regions where streaming instability active (rhod/rhog~1)
         !*****************************************************************
-        
-        
+                
         do jrad =2,ipebrad
            
-           Hp_to_Hg = sqrt(tstop(ipebrad)/alpha(ipebrad))*(1 + tstop(ipebrad)/alpha(ipebrad))**(-0.5)
+           Hp_to_Hg = sqrt(tstop(ipebrad)/alpha(ipebrad))*&
+                (1 + tstop(ipebrad)/alpha(ipebrad))**(-0.5)
+
            ! Compute rhop/rhog interior to pebble radius
            rhop_rhog = mdotpebble/(Hp_to_Hg*sigma(jrad)*2.0*pi*r(jrad)*vrpeb(jrad))
            
-           !print*, jrad, rhop_rhog, Hp_to_Hg, sigma(jrad), vrpeb(jrad)
            ! If rhop/rhog >1, mark this radius as streaming unstable region
            
            if(rhop_rhog>1.0 .and.mjeans(jrad)<1.0e-30) then
               stream_unstable(jrad) = 1
               
-              ! Record minimum and maximum values of streaming regions (assuming single region only
+              ! Record minimum and maximum values of streaming regions 
+              ! (assuming single region only)
+
               if(inner_radius.eqv..false.) then
                  rmin_unstable = r(jrad)
                  irmin_unstable = jrad
@@ -361,8 +359,10 @@ real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
            
         enddo
         
-        ! If streaming zone goes right to pebble front, make sure outer radius is found
-        if (inner_radius.eqv. .true. .and. outer_radius.eqv..false.) then           
+        ! If streaming zone goes right to pebble front, 
+        ! make sure outer radius is found
+
+        if (inner_radius.eqv. .true. .and. outer_radius.eqv..false.) then     
            rmax_unstable = r(ipebrad)
            irmax_unstable = ipebrad
            outer_radius = .true.
@@ -398,15 +398,14 @@ real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
            
            
         endif
-        
-     
-     
+             
         !****************************
         ! 4. Write output data to files
         !****************************
-     
-     
-        ! Check if accretion rate is at a maximum
+          
+        ! Check if fragment pebble accretion rate is at a maximum
+        ! Record maximal values
+
         if(planet_pebaccrete > planet_accretemax) then
            planet_accretemax = planet_pebaccrete
            mjeans_accretemax = mjeans(ipebrad)

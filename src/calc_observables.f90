@@ -1,23 +1,14 @@
 PROGRAM calc_observables
-  ! Program calculates observables for a grid of pre-generated
-  ! self-gravitating disc models
+  
+  ! Program reads data from sgd_grid
+  ! calculates astronomical observables for the model grid
   ! Assumes a dust temperature and opacity properties to do so
 
-  use eosdata, only: umass, udist, Boltzmannk
+  use eosdata
   implicit none
 
   integer :: irad,imdot,irrchoice
   integer :: nrad, nmdot
-
-  real, parameter :: pi = 3.14159265285
-  real, parameter :: twopi = 2.0*pi
-  real, parameter :: sigma_SB = 5.67e-5
-  real, parameter :: c = 3.0e10
-  real, parameter :: tolerance = 1.0e-5
-  real, parameter :: Qfrag = 2.0
-  real, parameter :: mjup = 1.8986e30
-  real, parameter :: pc = 206265.0*1.496e13  ! Parsec in cm
-
 
   real :: beta_k,distance, lambda0,kappa0,lambda,Tdust
   real :: Mstar, metallicity, gamma_sigma,gamma_omega
@@ -28,12 +19,15 @@ PROGRAM calc_observables
 
   character(100) ::inputfile,inputprefix, outputfile
 
+  !*******************************************
+  ! 1. Get input parameters and set up header:
+  !*******************************************
 
-  ! Get input parameters and set up header:
   print*, " "
   print*, "-----------------------------------------------"  
   print*, " OBSERVABLES FROM SELF-GRAVITATING DISC MODELS " 
   print*, "     Created by D. Forgan, Jan 2013            "
+  print*, "     Current Version: Jan 2018"
   print*, " (Relies on input from sgd_grid) "
   print*, "-----------------------------------------------"
   print*, " "
@@ -47,10 +41,10 @@ PROGRAM calc_observables
   read(10,*) inputprefix
   READ(10,*) outputfile
   READ(10,*) distance
-  READ(10,*) lambda
+  READ(10,*) lambda  ! Input in nanometres
   READ(10,*) kappa0
-  read(10,*) lambda0
-  read(10,*) beta_k
+  read(10,*) lambda0 ! input in nanometres
+  read(10,*) beta_k 
   read(10,*) Tdust
   close(10)
 
@@ -75,6 +69,11 @@ PROGRAM calc_observables
 
   OPEN(20,file=outputfile,status='unknown')
   write(20,*) nrad,nmdot,nu,lambda*1e4, rmin, rmax,mdotmin,mdotmax,Mstar,metallicity,gamma_sigma,gamma_omega,irrchoice,Q_irr,T_irr
+
+  !**************************
+  ! 2. Compute observables
+  !**************************
+
   ! Loop over parameters
 
   DO imdot = 1, nmdot
@@ -97,18 +96,22 @@ PROGRAM calc_observables
            flux_nu = (2.0*Boltzmannk/(c*c))*nu*nu*(T/(sigma*kappa_nu)**0.25)*twopi*r*dr/(distance*distance)
 
         ENDIF
-        !print*, flux_nu, Boltzmannk, c, nu, T,sigma,kappa_nu, distance, twopi*r*dr
 
-        !	Calculate total flux emitted up to and including this radius
+        ! Calculate total flux emitted up to and including this radius
 
         mtot = qratio*Mstar
         fluxtot = fluxtot + flux_nu
 
-        ! Calculate predicted mass from two different fluxes (given estimated dust temperature)
+        ! Calculate predicted mass from the observed flux
+        ! (given estimated dust temperature and assuming optically thin)
 
         mflux = distance*distance*fluxtot*c*c/(2.0*kappa_nu*nu*nu*Boltzmannk*Tdust)
 
-        !	Write to file (flux output in mJy)
+        !********************
+        ! 3.	Write to file 
+        !********************
+
+        ! flux output in mJy
 
         WRITE(20,*) r/udist, mdotvisc, qratio,mtot, flux_nu/1e-26, fluxtot/1e-26,mflux/umass, mflux/(umass*mtot)
 

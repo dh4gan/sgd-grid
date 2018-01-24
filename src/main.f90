@@ -14,7 +14,7 @@ PROGRAM sgd_grid
   real, parameter :: tolerance = 1.0e-5
   real, parameter :: Qfrag = 2.0
   real,parameter :: Q_irrcrit = 1.99
-  real,parameter :: alpha_sat = 0.1 ! Value of alpha at which self-gravity torque saturates
+  real,parameter :: alpha_sat = 0.1 ! Value of alpha at which gravitoturbulence saturates
   real, parameter :: gamma_Jcrit = -5 ! Minimum GammaJ value to be exceeded for fragmentation
   real, parameter :: gamma_Qcrit = 10 ! abs(gamma_Q) must be greater than this for self-gravitating disc
 
@@ -33,15 +33,19 @@ PROGRAM sgd_grid
   real :: cs_irr, T_irr, Q_irr, Msol, rAU, TLin
   real :: TLin_constant
 
-
   character(100) :: outputprefix,outputfile
 
-  ! Get input parameters and set up header:
+  !**********************************
+  ! 1. Determine input parameters
+  !**********************************
+
+  ! Write header
   print*, " "
   print*, "-----------------------------------------------"  
-  print*, "  SURVEYING 1D SELF-GRAVITATING DISC MODELS  " 
+  print*, "  SGD_GRID: GRIDS OF 1D SELF-GRAVITATING DISC MODELS  " 
   print*, "     Created by D. Forgan, May 2011 "
   print*, "     Majorly Revised, Jan 2013  "
+  print*, "     Current Version: Jan 2018  "
   print*, "	                                        	  "
   print*, "-----------------------------------------------"
   print*, " "
@@ -70,6 +74,7 @@ PROGRAM sgd_grid
   close(10)
 
   outputfile = trim(outputprefix)//'.sgdmodel'
+
   print*, 'Outputting to file ', outputfile
   print*, 'Mstar (msol) ', Mstar
   print*, 'Radial Limits: ', rmin, rmax
@@ -88,7 +93,7 @@ PROGRAM sgd_grid
      print*, 'Scaling constant ', TLin_constant
   endif
 
-   print*, 'Gamma_Omega: ', gamma_omega
+  print*, 'Gamma_Omega: ', gamma_omega
   print*, 'Gamma_Sigma: ', gamma_sigma
 
   rmin = rmin*udist
@@ -98,6 +103,9 @@ PROGRAM sgd_grid
   dmdot = (mdotmax-mdotmin)/REAL(nmdot)							
   Mstar = Mstar*umass	! star mass in cgs		
 
+  ! Read in Equation of State data
+
+
   ! gammamuT columns:
   ! 1) gamma
   ! 2) mu
@@ -106,9 +114,6 @@ PROGRAM sgd_grid
   ! 5) Mass Weighted Opacity (Stamatellos et al 2007)
 
   allocate(gammamuT(5)	)
-
-  !	Read in Equation of State
-
   CALL eosread
 
   OPEN(10,file=outputfile ,status='unknown')
@@ -130,6 +135,11 @@ PROGRAM sgd_grid
      ! Loop over radii
      DO irad = 1,nrad
 
+
+        !************************************************
+        ! 2. Determine local disc surface density, sound speed
+        !************************************************
+
 	r = rmin +(irad-1)*dr 
         sigma = 0.0
         omega = 0.0
@@ -145,15 +155,15 @@ PROGRAM sgd_grid
  ! mjeans always has the same prefactor - do this first
         mjeans = 4.0*1.412*pi*pi*pi/(3.0*G)
 
-        ! Set flags for selfgravitating, fragmenting 
+        ! Set flags for selfgravitating regions, fragmenting regions
 	frag =0
         selfgrav = 0
 
-        ! Calculate Omega
+        ! Calculate Omega - Keplerian frequency
 
 	omega = sqrt(G*Mstar/r**3)
 
- ! Begin iteration process
+ ! Begin iteration process to determine (sound speed,Sigma) for fixed Q, omega
 
  ! Guess Sigma (start from previous answer)
 
@@ -176,7 +186,7 @@ PROGRAM sgd_grid
 
            rhomid = sigma/(2.0*H)
 
-           !	Use EoS to calculate tau, gamma, betac
+           !	Use EoS to calculate optical depth, gamma, cooling time
 
            CALL eos_cs(rhomid, cs)
 
@@ -268,8 +278,9 @@ PROGRAM sgd_grid
         ENDIF
 
 
-        
-        !	Calculate Local Jeans Mass and jeans length
+        !***************************************************
+        ! 3. Calculate Local Jeans Mass, Jeans length
+        !***************************************************
 
         ! First strength of density perturbations
         deltasigma = 1.0+4.47*sqrt(alpha)
@@ -278,7 +289,7 @@ PROGRAM sgd_grid
         ljeans = sqrt(2.0*pi*pi*Qfrag/deltasigma)*H
         ljeans = ljeans/udist
 
-        !	Calculate fragment Hill Radius
+        ! Calculate fragment Hill Radius
 
         rhill = r*(mjeans/Mstar)**0.333
         rhill = rhill/udist
@@ -286,7 +297,9 @@ PROGRAM sgd_grid
         ! Convert Jeans mass to Jupiter masses
         mjeans = mjeans/mjup
 
-        ! Calculate if fragmentation is likely: requires two conditions to be met:
+        ! Calculate if fragmentation is likely 
+        ! requires two conditions to be met:
+
         ! 1. gamma_J small and negative (Jeans mass decreases rapidly)
         ! 2. gamma_Q large (Q relatively unchanging)
 
@@ -313,7 +326,9 @@ PROGRAM sgd_grid
            gamma_J = 1.25*csterm - 1.5/gamma_sigma + 0.5/gamma_omega
            gamma_Q = 0.5*csterm - 1.0/gamma_sigma + 1.0/gamma_omega
         ENDIF
-     
+
+
+        ! Only do inverse operation for non-zero denominators
         IF(gamma_J/=0.0) then
            gamma_J = 1.0/gamma_J
         else
@@ -326,7 +341,9 @@ PROGRAM sgd_grid
            gamma_Q = 1.0e30
         endif
 
-        ! Test for fragmentation
+        !************************************
+        ! 4. Test region for fragmentation
+        !************************************
 
         frag = 1  ! Set fragmentation flag to 'true' initially
         selfgrav = 1 ! Set self-gravitating flag to 'true' initially
@@ -337,7 +354,7 @@ PROGRAM sgd_grid
         ! If irradiation completely suppresses self-gravity, not self-gravitating
         IF(Q_irr==Q_irrcrit) selfgrav = 0                     
         
-        !	Calculate enclosed Mass and mass ratio
+        ! Calculate enclosed disc mass and mass ratio
 
         mtot = mtot + twopi*r*sigma*dr
         qratio = mtot/Mstar
@@ -350,12 +367,14 @@ PROGRAM sgd_grid
         ! Now check fragmenting disc is self-gravitating
         frag = frag*selfgrav
 
+        ! If disc isn't fragmenting, then set fragment properties to nil
         IF(frag==0) THEN
            mjeans = 0.0
            rhill=0.0
            ljeans = 0.0
         ENDIF
 
+        ! Do not write anything if the disc is non-self-gravitating
         IF(selfgrav==0) THEN
            mtot = 0.0
            sigma = 0.0
@@ -369,14 +388,18 @@ PROGRAM sgd_grid
            Q_irr = 0.0
         ENDIF
 
-        !	Write disc model to file
+        !************************************
+        ! 5. Write disc model to file
+        !************************************
 
-        WRITE(10,*) r/udist, mdotvisc*3.15e7/umass, qratio,sigma,cs,omega, T,betac,alpha,mjeans, &
-             ljeans, rhill,H/udist, T_irr,cs_irr,Q_irr, log10(1.0/gamma_J), log10(1.0/gamma_Q)
-
-
+        WRITE(10,*) r/udist, mdotvisc*3.15e7/umass, qratio,sigma,cs,omega, &
+             T,betac,alpha,mjeans, ljeans, rhill,H/udist, T_irr,cs_irr,Q_irr,&
+             log10(1.0/gamma_J), log10(1.0/gamma_Q)
      ENDDO
+     ! End of loop over radius
+
   ENDDO
+  ! End of loop over accretion rates
 
 
 END PROGRAM sgd_grid
