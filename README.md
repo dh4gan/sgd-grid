@@ -6,17 +6,20 @@ The code returns a grid of disc models as a function of input accretion rate and
 
 This code has been used in the following publications:
 
-Forgan & Rice (2011), MNRAS, 417, pp 1928-1937
+*Forgan & Rice (2011), MNRAS, 417, pp 1928-1937*
 
-Forgan & Rice (2013a), MNRAS, 430, pp 2082-2089
+*Forgan & Rice (2013a), MNRAS, 430, pp 2082-2089*
 
-Forgan & Rice (2013b), MNRAS, 432, pp 1796-1801
+*Forgan & Rice (2013b), MNRAS, 432, pp 1796-1801*
 
-Forgan et al (2016), MNRAS, 463, pp 957-964
+*Forgan et al (2016), MNRAS, 463, pp 957-964*
 
 with modified versions also appearing in
 
-Hall, Forgan et al (2016), MNRAS, 458, pp 306-318
+*Hall, Forgan et al (2016), MNRAS, 458, pp 306-318*
+
+If you plan to use this code for your own research, or if you would like to contribute to this repository then please get in touch with a brief description of what you would like to do.  I will seek co-authorship for any subsequent publications.
+
 
 Features
 --------
