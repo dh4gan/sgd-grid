@@ -1,5 +1,5 @@
 PROGRAM calc_observables
-  
+
   ! Program reads data from sgd_grid
   ! calculates astronomical observables for the model grid
   ! Assumes a dust temperature and opacity properties to do so
@@ -51,7 +51,7 @@ PROGRAM calc_observables
   ! Convert wavelengths into cm
   lambda = lambda*1e-4
   lambda0 = lambda0*1e-4
- 
+
   inputfile = trim(inputprefix)//'.sgdmodel'
   print*, 'Reading file ', inputfile
   outputfile = trim(inputprefix)//'.observe'
@@ -87,7 +87,7 @@ PROGRAM calc_observables
         read(10,*) r, mdotvisc, qratio, sigma, cs,omega,T,betac,alpha
 
         r = r*udist
-        
+
         ! Calculate flux generated in this annulus
 
         if (sigma*kappa_nu < 1.0) THEN
@@ -118,7 +118,7 @@ PROGRAM calc_observables
      ENDDO
   ENDDO
 
-close(10)
-close(20)
+  close(10)
+  close(20)
 
 END PROGRAM calc_observables

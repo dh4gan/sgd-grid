@@ -89,7 +89,7 @@ PROGRAM sgd_grid
      print*, 'Irradiation: fixed Tirr of ', T_irr
   else if (irrchoice==2) then
      print*, 'Irradiation: Ida Lin prescription'
-	TLin_constant = T_irr
+     TLin_constant = T_irr
      print*, 'Scaling constant ', TLin_constant
   endif
 
@@ -223,7 +223,7 @@ PROGRAM sgd_grid
                  TLin = TLin_constant*Msol/sqrt(rAU)                 
                  ! Must account for optical depth
                  IF(tau/=0.0)TLin = TLin/(tau+1.0/tau)**0.25
-!               T_irr = max(TLin, T_irr)
+                 !               T_irr = max(TLin, T_irr)
                  T_irr = TLin
               ENDIF
 
@@ -246,8 +246,8 @@ PROGRAM sgd_grid
            mdot_try = 3.0*pi*alpha*cs*cs*sigma/omega
            dT = (mdotvisc-mdot_try)/mdotvisc
 
-        ! If the iteration isn't converging after 1000 tries,
-        ! Reduce the amount by which sigma is modified
+           ! If the iteration isn't converging after 1000 tries,
+           ! Reduce the amount by which sigma is modified
 
 
            IF(ntries> 1000) THEN
@@ -259,7 +259,7 @@ PROGRAM sgd_grid
 
            IF(ABS(dsig)<1.0e-5.and.ntries>500) exit  ! Exit if percentage change in sigma very small
 
-            ! Modify sigma according to how poorly accretion rate is matched
+           ! Modify sigma according to how poorly accretion rate is matched
            sigma_old = sigma
            sigma = sigma*(1.0 +dT/(abs(dT))*fine)
 
@@ -353,7 +353,7 @@ PROGRAM sgd_grid
 
         ! If irradiation completely suppresses self-gravity, not self-gravitating
         IF(Q_irr==Q_irrcrit) selfgrav = 0                     
-        
+
         ! Calculate enclosed disc mass and mass ratio
 
         mtot = mtot + twopi*r*sigma*dr
@@ -362,7 +362,7 @@ PROGRAM sgd_grid
         ! If disc will be completely accreted within 5 orbital periods, not of interest
 
         tevolve = mtot*omega/mdotvisc
-!        if(tevolve < 5) selfgrav = 0
+        !        if(tevolve < 5) selfgrav = 0
 
         ! Now check fragmenting disc is self-gravitating
         frag = frag*selfgrav
