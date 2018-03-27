@@ -22,15 +22,15 @@ PROGRAM calc_pebble_accretion
   real, parameter :: vfrag = 1.0e3 ! Empirically determined fragmentation velocity (cm/s)
 
   integer, allocatable,dimension(:) :: stream_unstable
-  real, allocatable, dimension(:) :: r, sigma,cs,omega,alpha,mjeans
+  real, allocatable, dimension(:) :: r, sigma,cs,omega,alpha,mjeans,Hp_to_Hg,rhop_rhog
   real, allocatable, dimension(:) :: H, eta, vrpeb, rhogas,etadash,tstop,grainsize
   real,allocatable,dimension(:) :: tstop_frag,maxgrainsize
 
-  integer :: ipebrad,npebrad, irmin_unstable,irmax_unstable, jrad
-  real :: zpeb, beta_peb, rmax_peb, mplanet, Hp_to_Hg, Hp, dlogrhodr
+  integer :: ipebrad,npebrad, irmin_unstable,irmax_unstable
+  real :: zpeb, beta_peb, rmax_peb, mplanet, Hp, dlogrhodr
   real :: grainsize_in,tstop_in, rhosolid,mfp, actual_width
 
-  real :: rpeb, rdotpeb, tpeb, mdotpebble, rhill, rhop_rhog
+  real :: rpeb, rdotpeb, tpeb, mdotpebble, rhill
   real :: rmin_unstable, rmax_unstable, width_unstable, h_unstable
   real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
   real :: planet_pebaccrete, mcross, eff_pebble, effpeb
@@ -97,6 +97,8 @@ PROGRAM calc_pebble_accretion
   allocate(sigma(nrad))
   allocate(cs(nrad))
   allocate(H(nrad))
+  allocate(Hp_to_Hg(nrad))
+  allocate(rhop_rhog(nrad))
   allocate(rhogas(nrad))
   allocate(omega(nrad))
   allocate(alpha(nrad))
@@ -150,6 +152,8 @@ PROGRAM calc_pebble_accretion
      sigma(:) = 0.0
      cs(:) = 0.0
      H(:) = 0.0
+     Hp_to_Hg(:) = 0.0
+     rhop_rhog(:) = 0.0
      rhogas(:) = 0.0
      omega(:) = 0.0
      alpha(:) = 0.0
@@ -157,6 +161,15 @@ PROGRAM calc_pebble_accretion
      vrpeb(:) = 0.0
      mjeans(:) = 0.0
      stream_unstable(:) = 0
+     
+     inner_radius = .false.
+     outer_radius = .false.
+     rmin_unstable = 0.0
+     rmax_unstable = 0.0
+     irmin_unstable = 0
+     irmax_unstable = 0
+     width_unstable = 0.0
+
 
      ! Fill tstop, grainsize arrays with default values (changed later)
      tstop(:) = tstop_in 
@@ -190,7 +203,7 @@ PROGRAM calc_pebble_accretion
            dlogrhodr = 0.0
         endif
 
-        eta(irad) = -0.5*(H(irad)*H(irad))/(r(irad)*r(irad)) * dlogrhodr
+        eta(irad) = abs(0.5*(H(irad)*H(irad))/(r(irad)*r(irad)) * dlogrhodr)
 
         !*********************************************************************
         ! 1b Compute either grain size or stopping time depending on inputs
@@ -232,7 +245,67 @@ PROGRAM calc_pebble_accretion
         etadash(irad) = Chi*eta(irad)
 
         vrpeb(irad) = 2.0*eta(irad)*omega(irad)*r(irad)*tstop(irad)/(1.0 + tstop(irad)*tstop(irad))
-     enddo
+
+        rpeb = r(irad)
+
+        !**************************************************
+        ! 1c Compute susceptibility to streaming instability
+        !***************************************************
+
+        ! Need to compute mdotpebble first to do this here
+
+        ! Pebble growth timescale at this radius
+        tpeb = beta_peb/(zpeb*omega(irad))
+
+        ! Pebble front growth rate
+        rdotpeb = 0.6666*(G*Mstar*zpeb*zpeb/(tpeb*beta_peb*beta_peb))**(0.333)
+
+        ! Compute mdotpebble (g s^-1)
+        mdotpebble = 2.0*pi*rpeb*rdotpeb*zpeb*sigma(irad)
+
+        ! Scale height ratio of dust to gas
+        Hp_to_Hg(irad) = sqrt(tstop(irad)/alpha(irad))*&
+                (1 + tstop(irad)/alpha(irad))**(-0.5)
+
+        if(Hp_to_Hg(irad)*sigma(irad)*2.0*pi*r(irad)*vrpeb(irad) >1.0e-30) then
+           ! Ratio of dust to gas density at this radius
+           rhop_rhog(irad) = mdotpebble/(Hp_to_Hg(irad)*sigma(irad)*2.0*pi*r(irad)*vrpeb(irad))
+        else
+           rhop_rhog(irad) = 0.0
+        endif
+
+        ! If rhop/rhog >1 and not in fragmentation zone, 
+        ! mark this radius as streaming unstable region           
+        if(rhop_rhog(irad)>1.0 .and.mjeans(irad)<1.0e-30) then
+           stream_unstable(irad) = 1
+
+           ! Record minimum and maximum values of streaming regions 
+           ! (assuming single region only)
+           ! If in a fragmentation zone, curtail streaming region
+
+           if(inner_radius.eqv..false.) then
+              rmin_unstable = r(irad)
+              irmin_unstable = irad
+              inner_radius = .true.
+           endif
+        else
+           if(irad>1) then
+              if(stream_unstable(irad-1)==1) then
+                 rmax_unstable = r(irad)
+                 irmax_unstable = irad
+                 outer_radius = .true.
+                 width_unstable = rmax_unstable-rmin_unstable
+              endif
+           endif
+           endif
+
+        enddo
+
+        if(outer_radius .eqv. .false.) then
+           rmax_unstable = r(nrad)
+           irmax_unstable = nrad
+           width_unstable = rmax_unstable - rmin_unstable
+        endif
 
      !******************************************************************
      ! 2. Now compute pebble accretion properties as a function of rpeb
@@ -275,14 +348,7 @@ PROGRAM calc_pebble_accretion
         eff_pebble = 0.0
         mcross = 0.0
         h_unstable = 0.0
-        stream_unstable(:) = 0
-        inner_radius = .false.
-        outer_radius = .false.
-        rmin_unstable = 0.0
-        rmax_unstable = 0.0
-        irmin_unstable = 0
-        irmax_unstable = 0
-        width_unstable = 0.0
+       
 
         !*************************************************************
         ! 3 Compute the pebble accretion rate of any fragment present
@@ -297,7 +363,7 @@ PROGRAM calc_pebble_accretion
            zeta = 1/(1+tstop(ipebrad)*tstop(ipebrad))
            Chi = sqrt((1.0 + 4.0*tstop(ipebrad)*tstop(ipebrad)))/(1.0+tstop(ipebrad)*tstop(ipebrad))
 
-           Hp = sqrt(tstop(ipebrad)/alpha(ipebrad))*(1 + tstop(ipebrad)/alpha(ipebrad))**(-0.5) *H(ipebrad)
+           Hp = Hp_to_Hg(ipebrad)*H(ipebrad)
 
            ! Compute Hill Radius
            rhill_reduce = (mjeans(ipebrad)*mjup/(3.0*mstar))**0.3333
@@ -323,77 +389,26 @@ PROGRAM calc_pebble_accretion
 
            planet_pebaccrete = planet_pebaccrete*Chi*(1.0+ 3*bcross_reduce/(2*Chi*eta(ipebrad)))
 
-           if(planet_pebaccrete>mdotpebble) planet_pebaccrete = mdotpebble
+           !if(planet_pebaccrete>mdotpebble) planet_pebaccrete = mdotpebble
 
+           if(abs(planet_pebaccrete*year/mjup)>1.0e10) then
+              print*, planet_pebaccrete, Hp, bcross, bcross_reduce,eta(ipebrad)
+           endif
            ! compute pebble accretion efficiency
            eff_pebble = planet_pebaccrete/mdotpebble
 
         endif
 
-        !**********************************************************************
-        ! 4 Find regions where streaming instability permits planetesimal growth
-        !**********************************************************************
-
-        !*****************************************************************
-        ! 4a Find regions where streaming instability active (rhod/rhog~1)
-        !*****************************************************************
-
-        do jrad =2,ipebrad
-
-           Hp_to_Hg = sqrt(tstop(ipebrad)/alpha(ipebrad))*&
-                (1 + tstop(ipebrad)/alpha(ipebrad))**(-0.5)
-
-           ! Compute rhop/rhog interior to pebble radius
-           rhop_rhog = mdotpebble/(Hp_to_Hg*sigma(jrad)*2.0*pi*r(jrad)*vrpeb(jrad))
-
-           ! If rhop/rhog >1 and not in fragmentation zone, 
-           ! mark this radius as streaming unstable region
-           
-           if(rhop_rhog>1.0 .and.mjeans(jrad)<1.0e-30) then
-              stream_unstable(jrad) = 1
-
-              ! Record minimum and maximum values of streaming regions 
-              ! (assuming single region only)
-              ! If in a fragmentation zone, curtail streaming region
-
-              if(inner_radius.eqv..false.) then
-                 rmin_unstable = r(jrad)
-                 irmin_unstable = jrad
-                 inner_radius = .true.
-              endif
-           else
-              if(stream_unstable(jrad-1)==1) then
-                 rmax_unstable = r(jrad)
-                 irmax_unstable = jrad
-                 outer_radius = .true.
-                 width_unstable = rmax_unstable-rmin_unstable
-              endif
-           endif
-
-        enddo
-
-        ! If streaming zone goes right to pebble front, 
-        ! make sure outer radius is found
-
-        if (inner_radius.eqv. .true. .and. outer_radius.eqv..false.) then     
-           rmax_unstable = r(ipebrad)
-           irmax_unstable = ipebrad
-           outer_radius = .true.
-        endif
-
         !****************************************************
-        ! 4b compute crossing radius for planetesimal growth
+        ! 4 compute crossing radius for planetesimal growth
         !****************************************************
-
-        ! Find width of unstable region 
-
-        width_unstable = rmax_unstable - rmin_unstable           
-
+    
         mcross = 0.0
+        actual_width = 0.0
         ! Only do the calculations for non-zero widths
         ! Do calculation assuming ipebrad = inner distance of streaming
-
-        if(width_unstable > 0.0 .and. r(ipebrad)<rmax_unstable) then
+        if(width_unstable > 0.0) then
+           if(r(ipebrad)>rmin_unstable .and. r(ipebrad)<rmax_unstable) then
 
            !h_unstable = H(irmin_unstable)/rmin_unstable
 
@@ -411,11 +426,11 @@ PROGRAM calc_pebble_accretion
            mcross = sqrt(3.0*pi*actual_width*alpha(ipebrad)*mdotpebble*effpeb/&
                 (rmin_unstable*mdotvisc*gamma1))*h_unstable * h_unstable* Mstar
 
-           !write(*,'(10(1P,e8.1,1X))'), mcross/mjup, &
-           !     width_unstable/udist, h_unstable,mdotpebble/mdotvisc, &
+           !write(*,'(11(1P,e8.1,1X))'), mcross/mjup, &
+           !     actual_width/udist, gamma1,h_unstable,mdotpebble/mdotvisc, &
            !     alpha(irmin_unstable), mdotpebble, effpeb, mdotvisc, Mstar/umass
 
-
+           endif
         endif
 
         !****************************
@@ -440,8 +455,9 @@ PROGRAM calc_pebble_accretion
         ! Write to main output file
         write(30,*) mdotvisc*year/umass, rpeb/udist,grainsize(ipebrad),tstop(ipebrad),&
              tstop(ipebrad)/tstop_frag(ipebrad),maxgrainsize(ipebrad),tpeb/year, &
-             rdotpeb*year/udist, mdotpebble*year/mjup, &
-             width_unstable/udist, rmax_unstable/udist, &
+             rdotpeb*year/udist, mdotpebble*year/mjup,  &
+             Hp_to_Hg(ipebrad), rhop_rhog(ipebrad),vrpeb(ipebrad),&
+             actual_width/udist, rmin_unstable/udist, &
              mcross/mjup, mjeans(ipebrad),planet_pebaccrete*year/mjup, eff_pebble
 
      enddo

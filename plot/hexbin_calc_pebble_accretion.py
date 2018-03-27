@@ -11,9 +11,12 @@ import filefinder as ff
 
 # Set up tuples and dictionaries
 
-variablekeys = ("grainsize", "tstop","tstopratio","maxgrainsize","tpeb","rdotpeb","mdotpeb","width_stream","rmax_stream","mcross","mjeans", "planetmdotpeb","planeteff")
-variablenames = (r"$s$ (cm)", r"$\tau_s$",r"$\tau_s/\tau_{s,max}$",r"$s_{\rm max}$ (cm)",r"$t_{\rm peb}$ (yr)",r"$\dot{r}_{\rm peb}$ (AU yr$^{-1}$)",r"$\dot{M}_{\rm peb}\,(M_{\rm Jup} \, \rm{yr}^{-1}$)",r"$\Delta r_{\rm stream}$ (AU)",r"$r_{\rm max,stream}$",r"$M_{\rm cross}\, (M_{\rm Jup})$",r"$M_{\rm jeans} (M_{\rm Jup})$ ",r"$\dot{M}_{pl}\,(M_{\rm Jup} \, \rm{yr}^{-1})$", r"$\epsilon$")
+variablekeys = ("grainsize", "tstop","tstopratio","maxgrainsize","tpeb","rdotpeb","mdotpeb","Hp_to_Hg", "rhop_rhog","vrpeb","width_stream","rmax_stream","mcross","mjeans", "planetmdotpeb","planeteff")
+variablenames = (r"$s$ (cm)", r"$\tau_s$",r"$\tau_s/\tau_{s,max}$",r"$s_{\rm max}$ (cm)",r"$t_{\rm peb}$ (yr)",r"$\dot{r}_{\rm peb}$ (AU yr$^{-1}$)",r"$\dot{M}_{\rm peb}\,(M_{\rm Jup} \, \rm{yr}^{-1}$)",r"$H_p/H_g$", r"$\rho_p/\rho_g$",r"$v_{\rm r,peb}$ (cm s$^{-1}$)",r"$\Delta r_{\rm stream}$ (AU)",r"$r_{\rm max,stream}$",r"$M_{\rm cross}\, (M_{\rm Jup})$",r"$M_{\rm jeans} (M_{\rm Jup})$ ",r"$\dot{M}_{pl}\,(M_{\rm Jup} \, \rm{yr}^{-1})$", r"$\epsilon$")
 variablecolumns = range(2,len(variablekeys)+2)
+
+logplotchoices= ['grainsize','planetmdotpeb','mdotpeb','maxgrainsize','vrpeb','rhop_rhog']
+
 
 namedict = {}
 coldict = {}
@@ -98,7 +101,7 @@ for i in range(len(choices)):
     #radplot = rad[indices]
     #mdotplot = mdot[indices]
     #plotdata = plotdata[indices] # Delete all nonsensical data!
-    logscaleplot = choices[i]=='grainsize' or choices[i]=='planetmdotpeb' or choices[i]=='mdotpeb' or choices[i]=='maxgrainsize'
+    logscaleplot = choices[i] in logplotchoices
 
     # If plotting data on log scale
     if(logscaleplot):
@@ -124,7 +127,7 @@ for i in range(len(choices)):
     ax.set_ylabel(r"Gas Accretion Rate, $\mathrm{(M_{\odot} yr^{-1})}$", fontsize=20)
     ax.set_xlabel(r"$r_{\rm peb}$ (AU)", fontsize = 20)
     ax.set_yscale('log')
-    plt.hexbin(radplot,mdotplot,C=plotdata,gridsize = int(nrad*0.25), vmin = plotmin, vmax = plotmax, yscale='log',mincnt = 1,cmap='Blues')
+    plt.hexbin(radplot,mdotplot,C=plotdata,gridsize = int(0.75*nrad), vmin = plotmin, vmax = plotmax, yscale='log',mincnt = 1,cmap='Blues')
 
     ax.tick_params(axis='both',labelsize=16)
     #if(choices[i]=='mjeans'):
