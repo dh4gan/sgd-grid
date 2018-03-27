@@ -14,6 +14,7 @@ PROGRAM calc_pebble_accretion
   real :: mdotmax,mdotmin, mdotvisc, metallicity, mstar
   real :: qratio, T, gamma_sigma,gamma_omega
   real :: Q_irr, T_irr,dr, rmax,rmin, betac
+  real :: percentcount, displaypercent,increment
 
   real, parameter :: mu = 2.4
 
@@ -27,7 +28,7 @@ PROGRAM calc_pebble_accretion
 
   integer :: ipebrad,npebrad, irmin_unstable,irmax_unstable, jrad
   real :: zpeb, beta_peb, rmax_peb, mplanet, Hp_to_Hg, Hp, dlogrhodr
-  real :: grainsize_in,tstop_in, rhosolid,mfp
+  real :: grainsize_in,tstop_in, rhosolid,mfp, actual_width
 
   real :: rpeb, rdotpeb, tpeb, mdotpebble, rhill, rhop_rhog
   real :: rmin_unstable, rmax_unstable, width_unstable, h_unstable
@@ -133,8 +134,16 @@ PROGRAM calc_pebble_accretion
   ! 1 Compute disc properties needed for pebble accretion calculations
   !********************************************************************
 
+  increment = 10.0
+  displaypercent = 10.0
   ! Loop over accretion rates
   DO imdot = 1, nmdot
+
+     percentcount = real(imdot)*100.0/real(nmdot)
+     if(percentcount > displaypercent) then
+        print('(F5.0,A)'), displaypercent, '% complete'
+        displaypercent = displaypercent +increment
+     endif
 
 
      r(:) = 0.0
@@ -245,6 +254,7 @@ PROGRAM calc_pebble_accretion
 
      do ipebrad =1,npebrad
 
+
         rpeb = r(ipebrad)
 
         !**************************************
@@ -336,13 +346,15 @@ PROGRAM calc_pebble_accretion
            ! Compute rhop/rhog interior to pebble radius
            rhop_rhog = mdotpebble/(Hp_to_Hg*sigma(jrad)*2.0*pi*r(jrad)*vrpeb(jrad))
 
-           ! If rhop/rhog >1, mark this radius as streaming unstable region
-
+           ! If rhop/rhog >1 and not in fragmentation zone, 
+           ! mark this radius as streaming unstable region
+           
            if(rhop_rhog>1.0 .and.mjeans(jrad)<1.0e-30) then
               stream_unstable(jrad) = 1
 
               ! Record minimum and maximum values of streaming regions 
               ! (assuming single region only)
+              ! If in a fragmentation zone, curtail streaming region
 
               if(inner_radius.eqv..false.) then
                  rmin_unstable = r(jrad)
@@ -354,6 +366,7 @@ PROGRAM calc_pebble_accretion
                  rmax_unstable = r(jrad)
                  irmax_unstable = jrad
                  outer_radius = .true.
+                 width_unstable = rmax_unstable-rmin_unstable
               endif
            endif
 
@@ -376,10 +389,16 @@ PROGRAM calc_pebble_accretion
 
         width_unstable = rmax_unstable - rmin_unstable           
 
+        mcross = 0.0
         ! Only do the calculations for non-zero widths
-        if(width_unstable > 0.0) then
+        ! Do calculation assuming ipebrad = inner distance of streaming
 
-           h_unstable = H(irmin_unstable)/rmin_unstable
+        if(width_unstable > 0.0 .and. r(ipebrad)<rmax_unstable) then
+
+           !h_unstable = H(irmin_unstable)/rmin_unstable
+
+           actual_width = r(ipebrad)-rmin_unstable
+           h_unstable = H(ipebrad)/r(ipebrad)
 
            ! Compute crossing mass at this rpeb (Ormel et al 2017)
 
@@ -389,7 +408,7 @@ PROGRAM calc_pebble_accretion
               effpeb = 0.1
            endif
 
-           mcross = sqrt(3.0*pi*width_unstable*alpha(irmin_unstable)*mdotpebble*effpeb/&
+           mcross = sqrt(3.0*pi*actual_width*alpha(ipebrad)*mdotpebble*effpeb/&
                 (rmin_unstable*mdotvisc*gamma1))*h_unstable * h_unstable* Mstar
 
            !write(*,'(10(1P,e8.1,1X))'), mcross/mjup, &
