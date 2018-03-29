@@ -127,7 +127,7 @@ for i in range(len(choices)):
     ax.set_ylabel(r"Gas Accretion Rate, $\mathrm{(M_{\odot} yr^{-1})}$", fontsize=20)
     ax.set_xlabel(r"$r_{\rm peb}$ (AU)", fontsize = 20)
     ax.set_yscale('log')
-    plt.hexbin(radplot,mdotplot,C=plotdata,gridsize = int(0.75*nrad), vmin = plotmin, vmax = plotmax, yscale='log',mincnt = 1,cmap='Blues')
+    plt.hexbin(radplot,mdotplot,C=plotdata,gridsize = int(0.25*nrad), vmin = plotmin, vmax = plotmax, yscale='log',mincnt = 1,cmap='Blues')
 
     ax.tick_params(axis='both',labelsize=16)
     #if(choices[i]=='mjeans'):

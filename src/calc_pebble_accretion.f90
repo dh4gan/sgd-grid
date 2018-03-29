@@ -412,7 +412,7 @@ PROGRAM calc_pebble_accretion
 
            !h_unstable = H(irmin_unstable)/rmin_unstable
 
-           actual_width = r(ipebrad)-rmin_unstable
+           actual_width = rmax_unstable-r(ipebrad)
            h_unstable = H(ipebrad)/r(ipebrad)
 
            ! Compute crossing mass at this rpeb (Ormel et al 2017)
