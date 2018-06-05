@@ -222,7 +222,7 @@ PROGRAM sgd_grid
                  Msol = Mstar/umass
                  TLin = TLin_constant*Msol/sqrt(rAU)                 
                  ! Must account for optical depth
-                 IF(tau/=0.0)TLin = TLin/(tau+1.0/tau)**0.25
+                 IF(tau>1.0e-30)TLin = TLin/(tau+1.0/tau)**0.25
                  !               T_irr = max(TLin, T_irr)
                  T_irr = TLin
               ENDIF
@@ -234,7 +234,7 @@ PROGRAM sgd_grid
 
            ! Calculate cooling timescale for these parameters
 
-           betac = (tau+1.0/tau)*(cs*cs)*omega/&
+           betac = (tau+1.0/tau)*(cs*cs)*omega*sigma/&
                 (sigma_SB*(T**4.0-T_irr**4.0)*gamma*(gamma-1.0))
 
            !	Calculate alpha from this value --> accretion rate

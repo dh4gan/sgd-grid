@@ -389,7 +389,7 @@ PROGRAM calc_pebble_accretion
 
            planet_pebaccrete = planet_pebaccrete*Chi*(1.0+ 3*bcross_reduce/(2*Chi*eta(ipebrad)))
 
-           !if(planet_pebaccrete>mdotpebble) planet_pebaccrete = mdotpebble
+           if(planet_pebaccrete>mdotpebble) planet_pebaccrete = mdotpebble
 
            if(abs(planet_pebaccrete*year/mjup)>1.0e10) then
               print*, planet_pebaccrete, Hp, bcross, bcross_reduce,eta(ipebrad)
