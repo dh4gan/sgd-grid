@@ -14,6 +14,8 @@ PROGRAM calc_pebble_accretion
   real :: mdotmax,mdotmin, mdotvisc, metallicity, mstar
   real :: qratio, T, gamma_sigma,gamma_omega
   real :: Q_irr, T_irr,dr, rmax,rmin, betac
+  real :: gapcriterion, tcross,tgap,tmig1,aspectratio,dustaspectratio,mratio
+  real :: tstop_turb, mturb,maxgrow
   real :: percentcount, displaypercent,increment
 
   real, parameter :: mu = 2.4
@@ -301,6 +303,9 @@ PROGRAM calc_pebble_accretion
 
         enddo
 
+       ! print*, stream_unstable, mjeans, rhop_rhog
+        !STOP
+
         if(outer_radius .eqv. .false.) then
            rmax_unstable = r(nrad)
            irmax_unstable = nrad
@@ -357,42 +362,77 @@ PROGRAM calc_pebble_accretion
 
         if (mjeans(ipebrad)>0.0) then
 
+           aspectratio = H(ipebrad)/r(ipebrad)
+
+           mratio = mjeans(ipebrad)*mjup/mstar
+
            ! Convenience functions for calculating pebble accretion 
            ! (Ida et al 2016)
 
            zeta = 1/(1+tstop(ipebrad)*tstop(ipebrad))
            Chi = sqrt((1.0 + 4.0*tstop(ipebrad)*tstop(ipebrad)))/(1.0+tstop(ipebrad)*tstop(ipebrad))
 
-           Hp = Hp_to_Hg(ipebrad)*H(ipebrad)
+            Hp = Hp_to_Hg(ipebrad)*H(ipebrad)
 
            ! Compute Hill Radius
            rhill_reduce = (mjeans(ipebrad)*mjup/(3.0*mstar))**0.3333
            rhill = rhill_reduce*r(ipebrad)
 
-           ! Compute cross section of pebble flow for accretion
+           ! Does fragment drive a gap in pebbles? If so, no accretion
 
-           bcross_reduce = 3*tstop(ipebrad)**0.333*rhill_reduce/etadash(ipebrad)
+           aspectratio = H(ipebrad)/r(ipebrad)
+           dustaspectratio = Hp/r(ipebrad)
+           mratio = mjeans(ipebrad)*mjup/mstar
 
-           if(bcross_reduce>1.0) bcross_reduce = 1.0
 
-           bcross_reduce = bcross_reduce*2.0*tstop(ipebrad)**0.333*rhill_reduce
-           bcross = bcross_reduce*r(ipebrad)
+           gapcriterion = 0.75*Hp/rhill + &
+                50.0*alpha(ipebrad)*dustaspectratio**2/mratio
 
-           ! Now compute disc fragment's pebble accretion rate
+           ! Also check that migration slow enough to allow gap formation
 
-           planet_pebaccrete = sqrt(8.0/pi)*Hp/bcross
+           ! Type I migration timescale (Ormel et al 2017)
+           tmig1 = mstar*aspectratio*aspectratio/(gamma1*mratio*sigma(ipebrad)*r(ipebrad)*r(ipebrad)*omega(ipebrad))
 
-           if(planet_pebaccrete>1.0) planet_pebaccrete = 1.0
+           ! Gap crossing timescale
+           tcross = 2.5*rhill*tmig1/r(ipebrad)
+           
+           ! Gap formation timescale
+           tgap = 1000.0*(dustaspectratio**5)/(omega(ipebrad)*mratio*mratio)
 
-           planet_pebaccrete = sqrt(pi/2)*(bcross*bcross/Hp)* &
-                mdotpebble/(4.0*pi*r(ipebrad)*tstop(ipebrad)*zeta)
+           !print*, mjeans(ipebrad), gapcriterion, tmig1/year, tcross*omega(ipebrad), tgap*omega(ipebrad)
 
-           planet_pebaccrete = planet_pebaccrete*Chi*(1.0+ 3*bcross_reduce/(2*Chi*eta(ipebrad)))
+           ! If a gap is opened in the pebbles, then no pebble accretion
+           if(gapcriterion<1.0 .and. tgap> tcross) then
+              planet_pebaccrete = 0.0
 
-           if(planet_pebaccrete>mdotpebble) planet_pebaccrete = mdotpebble
+           else
 
-           if(abs(planet_pebaccrete*year/mjup)>1.0e10) then
-              print*, planet_pebaccrete, Hp, bcross, bcross_reduce,eta(ipebrad)
+              ! Compute cross section of pebble flow for accretion
+
+              bcross_reduce = 3*tstop(ipebrad)**0.333*rhill_reduce/etadash(ipebrad)
+
+              if(bcross_reduce>1.0) bcross_reduce = 1.0
+
+              bcross_reduce = bcross_reduce*2.0*tstop(ipebrad)**0.333*rhill_reduce
+              bcross = bcross_reduce*r(ipebrad)
+
+              ! Now compute disc fragment's pebble accretion rate
+
+              planet_pebaccrete = sqrt(8.0/pi)*Hp/bcross
+
+              if(planet_pebaccrete>1.0) planet_pebaccrete = 1.0
+
+              planet_pebaccrete = sqrt(pi/2)*(bcross*bcross/Hp)* &
+                   mdotpebble/(4.0*pi*r(ipebrad)*tstop(ipebrad)*zeta)
+
+              planet_pebaccrete = planet_pebaccrete*Chi*(1.0+ 3*bcross_reduce/(2*Chi*eta(ipebrad)))
+
+              if(planet_pebaccrete>mdotpebble) planet_pebaccrete = mdotpebble
+
+              if(abs(planet_pebaccrete*year/mjup)>1.0e10) then
+                 print*, planet_pebaccrete, Hp, bcross, bcross_reduce,eta(ipebrad)
+              endif
+
            endif
            ! compute pebble accretion efficiency
            eff_pebble = planet_pebaccrete/mdotpebble
@@ -425,7 +465,25 @@ PROGRAM calc_pebble_accretion
 
            mcross = sqrt(3.0*pi*actual_width*alpha(ipebrad)*mdotpebble*effpeb/&
                 (rmin_unstable*mdotvisc*gamma1))*h_unstable * h_unstable* Mstar
+           
+           ! Compute maximum growable mass in turbulent disc
 
+           ! Find maximum allowed stopping time for bidisperse grain population
+           ! (Booth & Clarke 2016, MNRAS, 458, 2676)
+
+           tstop_turb = vfrag/(cs(ipebrad)*4.47*sqrt(alpha(ipebrad))) + tstop(ipebrad)
+
+           ! Compute mean free path
+           mfp = sqrt(twopi)*mu*mH*H(ipebrad)/(coll_H*sigma(ipebrad))
+           
+           call calc_grainsize(maxgrow,mfp,rhosolid,sigma(ipebrad),tstop_turb)
+
+           ! maximum turbulent mass
+           mturb = 4.0*pi*maxgrow*maxgrow*maxgrow*rhosolid
+
+           if(mturb>1.0e7) then
+              print*, ipebrad, mturb/1.0e3, maxgrow, tstop_turb, tstop(ipebrad), tstop_turb/tstop(ipebrad)
+           endif
            !write(*,'(11(1P,e8.1,1X))'), mcross/mjup, &
            !     actual_width/udist, gamma1,h_unstable,mdotpebble/mdotvisc, &
            !     alpha(irmin_unstable), mdotpebble, effpeb, mdotvisc, Mstar/umass
@@ -437,6 +495,7 @@ PROGRAM calc_pebble_accretion
         ! 4. Write output data to files
         !****************************
 
+        !print*, r(ipebrad)/udist, Hp_to_Hg(ipebrad)*H(ipebrad)/r(ipebrad)
         ! Check if fragment pebble accretion rate is at a maximum
         ! Record maximal values
 
@@ -458,7 +517,7 @@ PROGRAM calc_pebble_accretion
              rdotpeb*year/udist, mdotpebble*year/mjup,  &
              Hp_to_Hg(ipebrad), rhop_rhog(ipebrad),vrpeb(ipebrad),&
              actual_width/udist, rmin_unstable/udist, &
-             mcross/mjup, mjeans(ipebrad),planet_pebaccrete*year/mjup, eff_pebble
+             mcross/mjup, maxgrow, mturb/1000.0, mjeans(ipebrad),planet_pebaccrete*year/mjup, eff_pebble
 
      enddo
 

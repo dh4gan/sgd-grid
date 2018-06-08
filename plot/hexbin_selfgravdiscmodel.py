@@ -7,13 +7,12 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import sys
 
-sys.path.append('/data/dhf3/programs/python/filefinder')
-import filefinder.localfiles as ff
+import filefinder as ff
 
 # Set up tuples and dictionaries
 
 variablekeys = ("q","sigma", "cs","omega","temp", "betac","alpha","mjeans","ljeans","rhill","h","tirr", "csirr", "Qirr", "gamma_J", "gamma_Q")
-variablenames = ("Disc to Star Mass Ratio","Surface Density","Sound Speed","Angular Velocity","Temperature","Beta_c", "Alpha","$M_{Jeans}/M_{\odot}$","Jeans length", "Hill Radius", "H/R", "Tirr", "cs_irr","Qirr", "Gamma_J", "Gamma_Q")
+variablenames = ("Disc to Star Mass Ratio","Surface Density","Sound Speed","Angular Velocity","Temperature","Beta_c", "Alpha",r"$M_{\rm Jeans}$ ($M_{\rm Jup}$)","Jeans length", "Hill Radius", "H/R", "Tirr", "cs_irr","Qirr", "Gamma_J", "Gamma_Q")
 variablecolumns = (2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17)
 
 
@@ -26,7 +25,12 @@ for i in range(len(variablekeys)):
 
 
 # Read in filename
-inputfile = ff.find_local_input_files('*.model')
+inputfile = ff.find_local_input_files('*.sgdmodel')
+contourchoice = raw_input("Add contour lines? (y/n) ")
+
+add_contour=False
+if("y" in contourchoice or "Y" in contourchoice):
+    add_contour=True
 
 # Decide which variable to plot contours for
 
@@ -88,8 +92,12 @@ for i in range(len(choices)):
     print "Plotting ",namedict[choices[i]]
     
     plotdata = data[:,columns[i]]
+    contourrad = rad.reshape(nmdot,nrad)
+    contourmdot = mdot.reshape(nmdot,nrad)
+    contourdata = plotdata.reshape(nmdot,nrad)
     indices = plotdata[:]>1e-40
-    
+
+    print contourdata.shape
     # Delete junk data
 
     #indices = plotdata[:]>1.0e-50
@@ -98,10 +106,9 @@ for i in range(len(choices)):
     mdotplot = mdot[indices]
     plotdata = plotdata[indices] # Delete all nonsensical data!
 
-
     
-    if choices[i]=='mjeans':
-        plotdata = plotdata*0.000954        
+    #if choices[i]=='mjeans':
+    #    plotdata = plotdata*0.000954        
         
     if choices[i]=='h':
         plotdata = plotdata/radplot
@@ -112,13 +119,13 @@ for i in range(len(choices)):
     
     
     print 'min, max: ',plotmin,plotmax
-    if choices[i]=='mjeans':
+    #if choices[i]=='mjeans':
         #plotmin = 0.08
-        plotmax = 0.35
+        #plotmax = 0.35
     
-    if choices[i]=='q':
-        plotmin = 0.1
-        plotmax = 1.0 
+    #if choices[i]=='q':
+    #    plotmin = 0.1
+    #    plotmax = 1.0 
         
     if choices[i]=='temp':
         plotmin = 50.0           
@@ -140,8 +147,10 @@ for i in range(len(choices)):
     ax.set_yscale('log')
     plt.hexbin(radplot,mdotplot,C=plotdata,gridsize = int(nrad*0.25), vmin = plotmin, vmax = plotmax, yscale='log',mincnt = 1,cmap='Blues')
 
-    if(choices[i]=='mjeans'):
-	ax.set_ylim(3e-5,1e-3)    
+
+   
+    #if(choices[i]=='mjeans'):
+	#ax.set_ylim(3e-5,1e-3)    
 
     # Add a hatched background where model does not return a value
     ax.set_axis_bgcolor('gray')
@@ -156,6 +165,13 @@ for i in range(len(choices)):
 
     cb = plt.colorbar()
     cb.set_label(namedict[choices[i]], fontsize=20)
+    
+    # Add contours
+    if(add_contour):
+         cs = plt.contour(contourrad,contourmdot,contourdata,colors='white')
+         plt.clabel(cs,cs.levels,inline=True)
+
+
     #plt.title(namedict[choices[i]])
     outputfile = "mdot_r_"+choices[i]+'.png'
     plt.savefig(outputfile, format = 'png')

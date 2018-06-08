@@ -234,7 +234,7 @@ PROGRAM sgd_grid
 
            ! Calculate cooling timescale for these parameters
 
-           betac = (tau+1.0/tau)*(cs*cs)*omega*sigma/&
+           betac = (tau+1.0/tau)*(cs*cs)*omega/&
                 (sigma_SB*(T**4.0-T_irr**4.0)*gamma*(gamma-1.0))
 
            !	Calculate alpha from this value --> accretion rate
@@ -270,12 +270,12 @@ PROGRAM sgd_grid
  ! Check for MRI activation
  ! If so, then set alpha=0.01 and readjust sigma to maintain mdotvisc
 
-        IF(T>1000.0) THEN
+        !IF(T>1000.0) THEN
            !	print*, 'MRI active ',r/udist, T, alpha, sigma
-           alpha = 0.01
-           sigma = mdotvisc*omega/(3.0*pi*alpha*cs*cs)
+        !   alpha = 0.01
+        !   sigma = mdotvisc*omega/(3.0*pi*alpha*cs*cs)
            !	print*, 'MRI active ', T, alpha, sigma
-        ENDIF
+        !ENDIF
 
 
         !***************************************************
@@ -286,6 +286,7 @@ PROGRAM sgd_grid
         deltasigma = 1.0+4.47*sqrt(alpha)
 
         mjeans = mjeans*cs*cs*sqrt(Qfrag)*H/deltasigma
+        !mjeans = mjeans*cs*cs*cs*cs*sqrt(Qfrag)/(pi*G*sigma*deltasigma)
         ljeans = sqrt(2.0*pi*pi*Qfrag/deltasigma)*H
         ljeans = ljeans/udist
 

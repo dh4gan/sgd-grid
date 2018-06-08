@@ -11,11 +11,11 @@ import filefinder as ff
 
 # Set up tuples and dictionaries
 
-variablekeys = ("grainsize", "tstop","tstopratio","maxgrainsize","tpeb","rdotpeb","mdotpeb","Hp_to_Hg", "rhop_rhog","vrpeb","width_stream","rmax_stream","mcross","mjeans", "planetmdotpeb","planeteff")
-variablenames = (r"$s$ (cm)", r"$\tau_s$",r"$\tau_s/\tau_{s,max}$",r"$s_{\rm max}$ (cm)",r"$t_{\rm peb}$ (yr)",r"$\dot{r}_{\rm peb}$ (AU yr$^{-1}$)",r"$\dot{M}_{\rm peb}\,(M_{\rm Jup} \, \rm{yr}^{-1}$)",r"$H_p/H_g$", r"$\rho_p/\rho_g$",r"$v_{\rm r,peb}$ (cm s$^{-1}$)",r"$\Delta r_{\rm stream}$ (AU)",r"$r_{\rm max,stream}$",r"$M_{\rm cross}\, (M_{\rm Jup})$",r"$M_{\rm jeans} (M_{\rm Jup})$ ",r"$\dot{M}_{pl}\,(M_{\rm Jup} \, \rm{yr}^{-1})$", r"$\epsilon$")
+variablekeys = ("grainsize", "tstop","tstopratio","maxgrainsize","tpeb","rdotpeb","mdotpeb","Hp_to_Hg", "rhop_rhog","vrpeb","width_stream","rmax_stream","mcross","max_graingrowth", "mturb", "mjeans", "planetmdotpeb","planeteff")
+variablenames = (r"$s$ (cm)", r"$\tau_s$",r"$\tau_s/\tau_{s,max}$",r"$s_{\rm max}$ (cm)",r"$t_{\rm peb}$ (yr)",r"$\dot{r}_{\rm peb}$ (AU yr$^{-1}$)",r"$\dot{M}_{\rm peb}\,(M_{\rm Jup} \, \rm{yr}^{-1}$)",r"$H_p/H_g$", r"$\rho_p/\rho_g$",r"$v_{\rm r,peb}$ (cm s$^{-1}$)",r"$\Delta r_{\rm stream}$ (AU)",r"$r_{\rm max,stream}$",r"$M_{\rm cross}\, (M_{\rm Jup})$",r"$s_{\rm max,turb} (cm)$", r"$M_{\rm turb}\, (M_{\rm Jup})$",r"$M_{\rm jeans} (M_{\rm Jup})$ ",r"$\dot{M}_{pl}\,(M_{\rm Jup} \, \rm{yr}^{-1})$", r"$\epsilon$")
 variablecolumns = range(2,len(variablekeys)+2)
 
-logplotchoices= ['grainsize','planetmdotpeb','mdotpeb','maxgrainsize','vrpeb','rhop_rhog']
+logplotchoices= ['grainsize','planetmdotpeb','mdotpeb','maxgrainsize','max_graingrowth', 'mturb','vrpeb','rhop_rhog']
 
 
 namedict = {}
@@ -28,6 +28,12 @@ for i in variablecolumns:
 
 # Read in filename
 inputfile = ff.find_sorted_local_input_files('*.pebble')
+
+contourchoice = raw_input("Add contour lines? (y/n) ")
+
+add_contour=False
+if("y" in contourchoice or "Y" in contourchoice):
+    add_contour=True
 
 # Decide which variable to plot contours for
 
@@ -83,6 +89,11 @@ mdot = data[:,0]
 
 # Some plots will have log scale colorbars
 
+rmin_orig = np.amin(rad)
+rmax_orig = np.amax(rad)
+
+mdotmin_orig = np.amin(mdot)
+mdotmax_orig = np.amax(mdot)
 
 # Now loop over choices
 
@@ -91,16 +102,21 @@ for i in range(len(choices)):
     print "Plotting ",namedict[choices[i]]
     
     plotdata = data[:,columns[i]]
-    #indices = plotdata[:]>1e-40
+    indices = plotdata[:]>1e-40
     
     # Delete junk data
 
     #indices = plotdata[:]>1.0e-50
     radplot = rad
     mdotplot = mdot
-    #radplot = rad[indices]
-    #mdotplot = mdot[indices]
-    #plotdata = plotdata[indices] # Delete all nonsensical data!
+
+    contourrad = rad.reshape(nmdot,nrad)
+    contourmdot = mdot.reshape(nmdot,nrad)
+    contourdata = plotdata.reshape(nmdot,nrad)
+
+    radplot = rad[indices]
+    mdotplot = mdot[indices]
+    plotdata = plotdata[indices] # Delete all nonsensical data!
     logscaleplot = choices[i] in logplotchoices
 
     # If plotting data on log scale
@@ -124,8 +140,10 @@ for i in range(len(choices)):
     
     fig1 = plt.figure(figsize=(10,8))
     ax = fig1.add_subplot(111)
-    ax.set_ylabel(r"Gas Accretion Rate, $\mathrm{(M_{\odot} yr^{-1})}$", fontsize=20)
-    ax.set_xlabel(r"$r_{\rm peb}$ (AU)", fontsize = 20)
+    ax.set_xlim(rmin_orig,rmax_orig)
+    ax.set_ylim(mdotmin_orig,mdotmax_orig)
+    ax.set_ylabel(r"Gas Accretion Rate $\mathrm{(M_{\odot} yr^{-1})}$", fontsize=22)
+    ax.set_xlabel(r"$r_{\rm peb}$ (AU)", fontsize = 22)
     ax.set_yscale('log')
     plt.hexbin(radplot,mdotplot,C=plotdata,gridsize = int(0.25*nrad), vmin = plotmin, vmax = plotmax, yscale='log',mincnt = 1,cmap='Blues')
 
@@ -145,7 +163,7 @@ for i in range(len(choices)):
 
 
     cb = plt.colorbar()
-    cb.set_label(namedict[choices[i]], fontsize=20)
+    cb.set_label(namedict[choices[i]], fontsize=22)
 
     # If log scale plot, adjust colorbar labels: 10^val etc
     if(logscaleplot):
@@ -158,6 +176,13 @@ for i in range(len(choices)):
         ticklabels = [r"$10^{"+str(val)+"}$" for val in tickvals]
         cb.set_ticks(tickvals)
         cb.ax.set_yticklabels(ticklabels,fontsize=18)
+
+
+    # Add contours
+    if(add_contour):
+         cs = plt.contour(contourrad,contourmdot,contourdata,10,colors='black')
+         plt.clabel(cs,cs.levels,inline=True)
+
 
     #plt.title(namedict[choices[i]])
     outputfile = "mdot_r_"+choices[i]+"_"+inputfile+'.png'
