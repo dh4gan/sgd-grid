@@ -15,13 +15,14 @@ PROGRAM calc_pebble_accretion
   real :: qratio, T, gamma_sigma,gamma_omega
   real :: Q_irr, T_irr,dr, rmax,rmin, betac
   real :: gapcriterion, tcross,tgap,tmig1,aspectratio,dustaspectratio,mratio
-  real :: tstop_turb, mturb,maxgrow
+  real :: tstop_turb, mturb,maxgrow, miso_peb
   real :: percentcount, displaypercent,increment
 
   real, parameter :: mu = 2.4
 
   real, parameter :: gamma1 = 4.0
   real, parameter :: vfrag = 1.0e3 ! Empirically determined fragmentation velocity (cm/s)
+  real, parameter :: effpeb = 0.001 ! Pebble Accretion Efficiency
 
   integer, allocatable,dimension(:) :: stream_unstable
   real, allocatable, dimension(:) :: r, sigma,cs,omega,alpha,mjeans,Hp_to_Hg,rhop_rhog
@@ -29,13 +30,13 @@ PROGRAM calc_pebble_accretion
   real,allocatable,dimension(:) :: tstop_frag,maxgrainsize
 
   integer :: ipebrad,npebrad, irmin_unstable,irmax_unstable
-  real :: zpeb, beta_peb, rmax_peb, mplanet, Hp, dlogrhodr
+  real :: zpeb, fpeb,beta_peb, rmax_peb, mplanet, Hp, dlogrhodr
   real :: grainsize_in,tstop_in, rhosolid,mfp, actual_width
 
   real :: rpeb, rdotpeb, tpeb, mdotpebble, rhill
   real :: rmin_unstable, rmax_unstable, width_unstable, h_unstable
   real :: bcross_reduce, bcross, rhill_reduce, zeta, Chi
-  real :: planet_pebaccrete, mcross, eff_pebble, effpeb
+  real :: planet_pebaccrete, mcross, eff_pebble
   real :: rpeb_accretemax, tpeb_accretemax, mdotpebble_accretemax, mjeans_accretemax
   real :: planet_accretemax, mcross_accretemax, eff_accretemax
 
@@ -66,9 +67,9 @@ PROGRAM calc_pebble_accretion
   read(10,*) grainsize_in ! Input Grain size (cm)
   read(10,*) rhosolid ! Density of grains (g cm ^-3)
   read(10,*) zpeb ! Metallicity of disc
+  read(10,*) fpeb ! Fraction of disc in pebbles
   read(10,*) beta_peb ! growth rate of pebbles t_peb = beta_peb *(zpeb*omega(irad)^-1
   read(10,*) rmax_peb ! Maximum radius to consider pebble accretion  (AU)
-  read(10,*) mplanet ! Typical planet mass for pebble accretion (Jupiter masses)
   close(10)
 
   inputfile = trim(inputprefix)//'.sgdmodel'
@@ -130,7 +131,7 @@ PROGRAM calc_pebble_accretion
   ! Write header for global maxima output file
   OPEN(20,file=outputlog,status='unknown')
   write(20,*) nrad,nmdot,rmin,rmax,mdotmin,mdotmax,Mstar,&
-       tstop,zpeb,beta_peb,&
+       tstop,zpeb,fpeb,beta_peb,&
        metallicity,gamma_sigma,gamma_omega,irrchoice,Q_irr,T_irr
 
 
@@ -263,7 +264,7 @@ PROGRAM calc_pebble_accretion
         rdotpeb = 0.6666*(G*Mstar*zpeb*zpeb/(tpeb*beta_peb*beta_peb))**(0.333)
 
         ! Compute mdotpebble (g s^-1)
-        mdotpebble = 2.0*pi*rpeb*rdotpeb*zpeb*sigma(irad)
+        mdotpebble = 2.0*pi*rpeb*rdotpeb*zpeb*fpeb*sigma(irad)
 
         ! Scale height ratio of dust to gas
         Hp_to_Hg(irad) = sqrt(tstop(irad)/alpha(irad))*&
@@ -360,11 +361,18 @@ PROGRAM calc_pebble_accretion
         ! (according to equations of Ida et al (2016)
         !*************************************************************
 
+        ! Compute some useful expressions out front
+        Hp = Hp_to_Hg(ipebrad)*H(ipebrad)
+        aspectratio = H(ipebrad)/r(ipebrad)
+        dustaspectratio = Hp/r(ipebrad)
+        mratio = mjeans(ipebrad)*mjup/mstar
+
+
+        ! Pebble isolation mass
+        miso_peb = (dustaspectratio*dustaspectratio*dustaspectratio)*mstar
+
+
         if (mjeans(ipebrad)>0.0) then
-
-           aspectratio = H(ipebrad)/r(ipebrad)
-
-           mratio = mjeans(ipebrad)*mjup/mstar
 
            ! Convenience functions for calculating pebble accretion 
            ! (Ida et al 2016)
@@ -372,19 +380,12 @@ PROGRAM calc_pebble_accretion
            zeta = 1/(1+tstop(ipebrad)*tstop(ipebrad))
            Chi = sqrt((1.0 + 4.0*tstop(ipebrad)*tstop(ipebrad)))/(1.0+tstop(ipebrad)*tstop(ipebrad))
 
-            Hp = Hp_to_Hg(ipebrad)*H(ipebrad)
-
            ! Compute Hill Radius
            rhill_reduce = (mjeans(ipebrad)*mjup/(3.0*mstar))**0.3333
            rhill = rhill_reduce*r(ipebrad)
 
            ! Does fragment drive a gap in pebbles? If so, no accretion
-
-           aspectratio = H(ipebrad)/r(ipebrad)
-           dustaspectratio = Hp/r(ipebrad)
-           mratio = mjeans(ipebrad)*mjup/mstar
-
-
+          
            gapcriterion = 0.75*Hp/rhill + &
                 50.0*alpha(ipebrad)*dustaspectratio**2/mratio
 
@@ -397,12 +398,12 @@ PROGRAM calc_pebble_accretion
            tcross = 2.5*rhill*tmig1/r(ipebrad)
            
            ! Gap formation timescale
-           tgap = 1000.0*(dustaspectratio**5)/(omega(ipebrad)*mratio*mratio)
+           tgap = 3.0e4*(dustaspectratio**5)/(omega(ipebrad)*mratio*mratio)
 
-           !print*, mjeans(ipebrad), gapcriterion, tmig1/year, tcross*omega(ipebrad), tgap*omega(ipebrad)
+           print*, mjeans(ipebrad), gapcriterion, tgap/tcross, tgap*omega(ipebrad)
 
            ! If a gap is opened in the pebbles, then no pebble accretion
-           if(gapcriterion<1.0 .and. tgap> tcross) then
+           if(gapcriterion<1.0 .and. tgap< tcross) then
               planet_pebaccrete = 0.0
 
            else
@@ -434,7 +435,7 @@ PROGRAM calc_pebble_accretion
               endif
 
            endif
-           ! compute pebble accretion efficiency
+           ! measure pebble accretion efficiency
            eff_pebble = planet_pebaccrete/mdotpebble
 
         endif
@@ -445,6 +446,9 @@ PROGRAM calc_pebble_accretion
     
         mcross = 0.0
         actual_width = 0.0
+
+        
+
         ! Only do the calculations for non-zero widths
         ! Do calculation assuming ipebrad = inner distance of streaming
         if(width_unstable > 0.0) then
@@ -456,16 +460,17 @@ PROGRAM calc_pebble_accretion
            h_unstable = H(ipebrad)/r(ipebrad)
 
            ! Compute crossing mass at this rpeb (Ormel et al 2017)
-
-           if(eff_pebble>0.0) then
-              effpeb = eff_pebble
-           else
-              effpeb = 0.1
-           endif
-
+           ! Impose a pebble accretion efficiency (effpeb parameter)
+           
            mcross = sqrt(3.0*pi*actual_width*alpha(ipebrad)*mdotpebble*effpeb/&
                 (rmin_unstable*mdotvisc*gamma1))*h_unstable * h_unstable* Mstar
            
+
+           ! If crossing mass exceeds local isolation mass, restrict it here
+
+          
+           if(mcross > miso_peb) mcross = miso_peb
+
            ! Compute maximum growable mass in turbulent disc
 
            ! Find maximum allowed stopping time for bidisperse grain population
@@ -480,6 +485,8 @@ PROGRAM calc_pebble_accretion
 
            ! maximum turbulent mass
            mturb = 4.0*pi*maxgrow*maxgrow*maxgrow*rhosolid
+
+           !print*, mcross/mjup, miso_peb/mjup, dustaspectratio, aspectratio
 
            if(mturb>1.0e7) then
               print*, ipebrad, mturb/1.0e3, maxgrow, tstop_turb, tstop(ipebrad), tstop_turb/tstop(ipebrad)
@@ -517,7 +524,7 @@ PROGRAM calc_pebble_accretion
              rdotpeb*year/udist, mdotpebble*year/mjup,  &
              Hp_to_Hg(ipebrad), rhop_rhog(ipebrad),vrpeb(ipebrad),&
              actual_width/udist, rmin_unstable/udist, &
-             mcross/mjup, maxgrow, mturb/1000.0, mjeans(ipebrad),planet_pebaccrete*year/mjup, eff_pebble
+             mcross/mjup, maxgrow, miso_peb/mjup, mjeans(ipebrad),planet_pebaccrete*year/mjup, eff_pebble
 
      enddo
 
