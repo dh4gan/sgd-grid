@@ -11,11 +11,11 @@ import filefinder as ff
 
 # Set up tuples and dictionaries
 
-variablekeys = ("grainsize", "tstop","tstopratio","maxgrainsize","tpeb","rdotpeb","mdotpeb","Hp_to_Hg", "rhop_rhog","vrpeb","width_stream","rmax_stream","mcross","max_graingrowth", "mturb", "mjeans", "planetmdotpeb","planeteff")
-variablenames = (r"$s$ (cm)", r"$\tau_s$",r"$\tau_s/\tau_{s,max}$",r"$s_{\rm max}$ (cm)",r"$t_{\rm peb}$ (yr)",r"$\dot{r}_{\rm peb}$ (AU yr$^{-1}$)",r"$\dot{M}_{\rm peb}\,(M_{\rm Jup} \, \rm{yr}^{-1}$)",r"$H_p/H_g$", r"$\rho_p/\rho_g$",r"$v_{\rm r,peb}$ (cm s$^{-1}$)",r"$\Delta r_{\rm stream}$ (AU)",r"$r_{\rm max,stream}$",r"$M_{\rm cross}\, (M_{\rm Jup})$",r"$s_{\rm max,turb} (cm)$", r"$M_{\rm turb}\, (M_{\rm Jup})$",r"$M_{\rm jeans} (M_{\rm Jup})$ ",r"$\dot{M}_{pl}\,(M_{\rm Jup} \, \rm{yr}^{-1})$", r"$\epsilon$")
+variablekeys = ("grainsize", "tstop","tstopratio","maxgrainsize","tpeb","rdotpeb","mdotpeb","Hp_to_Hg", "rhop_rhog","vrpeb","width_stream","rmax_stream","mcross","max_graingrowth", "miso", "mjeans", "planetmdotpeb","planeteff")
+variablenames = (r"$s$ (cm)", r"$\tau_s$",r"$\tau_s/\tau_{s,max}$",r"$s_{\rm max}$ (cm)",r"$t_{\rm peb}$ (yr)",r"$\dot{r}_{\rm peb}$ (AU yr$^{-1}$)",r"$\dot{M}_{\rm peb}\,(M_{\rm Jup} \, \rm{yr}^{-1}$)",r"$H_p/H_g$", r"$\rho_p/\rho_g$",r"$v_{\rm r,peb}$ (cm s$^{-1}$)",r"$\Delta r_{\rm stream}$ (AU)",r"$r_{\rm max,stream}$",r"$M_{\rm cross}\, (M_{\rm \oplus})$",r"$s_{\rm max,turb} (cm)$", r"$M_{\rm iso}\, (M_{\rm \oplus})$",r"$M_{\rm jeans} (M_{\rm Jup})$ ",r"$\dot{M}_{pl}\,(M_{\rm Jup} \, \rm{yr}^{-1})$", r"$\epsilon$")
 variablecolumns = range(2,len(variablekeys)+2)
 
-logplotchoices= ['grainsize','planetmdotpeb','mdotpeb','maxgrainsize','max_graingrowth', 'mturb','vrpeb','rhop_rhog']
+logplotchoices= ['grainsize','planetmdotpeb','mdotpeb','maxgrainsize','max_graingrowth','vrpeb','rhop_rhog']
 
 
 namedict = {}
@@ -163,7 +163,7 @@ for i in range(len(choices)):
 
 
     cb = plt.colorbar()
-    cb.set_label(namedict[choices[i]], fontsize=22)
+    cb.set_label(namedict[choices[i]], fontsize=26)
 
     # If log scale plot, adjust colorbar labels: 10^val etc
     if(logscaleplot):

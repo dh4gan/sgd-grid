@@ -20,7 +20,7 @@ PROGRAM calc_pebble_accretion
 
   real, parameter :: mu = 2.4
 
-  real, parameter :: gamma1 = 4.0
+  real, parameter :: gamma1 = 1.0
   real, parameter :: vfrag = 1.0e3 ! Empirically determined fragmentation velocity (cm/s)
   real, parameter :: effpeb = 0.001 ! Pebble Accretion Efficiency
 
@@ -141,6 +141,7 @@ PROGRAM calc_pebble_accretion
 
   increment = 10.0
   displaypercent = 10.0
+
   ! Loop over accretion rates
   DO imdot = 1, nmdot
 
@@ -185,10 +186,6 @@ PROGRAM calc_pebble_accretion
 
         read(10,*) r(irad), mdotvisc, qratio, sigma(irad), cs(irad),omega(irad),&
              T,betac,alpha(irad), mjeans(irad)
-
-        !print*, r(irad), mdotvisc, qratio, sigma(irad), cs(irad),omega(irad),&
-        !     T,betac,alpha(irad)
-
 
         ! Be careful with units here
         H(irad) = (cs(irad)/omega(irad)) ! in units of cm
@@ -347,12 +344,13 @@ PROGRAM calc_pebble_accretion
         rdotpeb = 0.6666*(G*Mstar*zpeb*zpeb/(tpeb*beta_peb*beta_peb))**(0.333)
 
         ! Compute mdotpebble (g s^-1)
-        mdotpebble = 2.0*pi*rpeb*rdotpeb*zpeb*sigma(ipebrad)
+        mdotpebble = 2.0*pi*rpeb*rdotpeb*zpeb*fpeb*sigma(ipebrad)
 
         ! Initialise parameters for calculation
         planet_pebaccrete = 0.0
         eff_pebble = 0.0
         mcross = 0.0
+        mturb = 0.0
         h_unstable = 0.0
        
 
@@ -384,8 +382,10 @@ PROGRAM calc_pebble_accretion
            rhill_reduce = (mjeans(ipebrad)*mjup/(3.0*mstar))**0.3333
            rhill = rhill_reduce*r(ipebrad)
 
+           !***********************************************************
            ! Does fragment drive a gap in pebbles? If so, no accretion
-          
+           !***********************************************************
+
            gapcriterion = 0.75*Hp/rhill + &
                 50.0*alpha(ipebrad)*dustaspectratio**2/mratio
 
@@ -398,9 +398,7 @@ PROGRAM calc_pebble_accretion
            tcross = 2.5*rhill*tmig1/r(ipebrad)
            
            ! Gap formation timescale
-           tgap = 3.0e4*(dustaspectratio**5)/(omega(ipebrad)*mratio*mratio)
-
-           print*, mjeans(ipebrad), gapcriterion, tgap/tcross, tgap*omega(ipebrad)
+           tgap = 3.0e4*(dustaspectratio**5)/(omega(ipebrad)*mratio*mratio)          
 
            ! If a gap is opened in the pebbles, then no pebble accretion
            if(gapcriterion<1.0 .and. tgap< tcross) then
@@ -460,14 +458,13 @@ PROGRAM calc_pebble_accretion
            h_unstable = H(ipebrad)/r(ipebrad)
 
            ! Compute crossing mass at this rpeb (Ormel et al 2017)
-           ! Impose a pebble accretion efficiency (effpeb parameter)
+           ! with our imposed pebble accretion efficiency (effpeb parameter)
            
            mcross = sqrt(3.0*pi*actual_width*alpha(ipebrad)*mdotpebble*effpeb/&
                 (rmin_unstable*mdotvisc*gamma1))*h_unstable * h_unstable* Mstar
            
 
            ! If crossing mass exceeds local isolation mass, restrict it here
-
           
            if(mcross > miso_peb) mcross = miso_peb
 
@@ -524,14 +521,14 @@ PROGRAM calc_pebble_accretion
              rdotpeb*year/udist, mdotpebble*year/mjup,  &
              Hp_to_Hg(ipebrad), rhop_rhog(ipebrad),vrpeb(ipebrad),&
              actual_width/udist, rmin_unstable/udist, &
-             mcross/mjup, maxgrow, miso_peb/mjup, mjeans(ipebrad),planet_pebaccrete*year/mjup, eff_pebble
+             mcross/mearth, maxgrow, miso_peb/mearth, mjeans(ipebrad),planet_pebaccrete*year/mjup, eff_pebble
 
      enddo
 
      ! Now write to global maxima file for this mdot
 
      write(20,*) mdotvisc*year/umass, rpeb_accretemax/udist, tpeb_accretemax/3.15e7, &
-          mdotpebble_accretemax*year/mjup, mcross_accretemax/mjup, &
+          mdotpebble_accretemax*year/mjup, mcross_accretemax/mearth, &
           mjeans_accretemax, planet_accretemax*year/mjup, &
           eff_accretemax
 
