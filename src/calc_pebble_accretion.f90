@@ -13,7 +13,7 @@ PROGRAM calc_pebble_accretion
 
   real :: mdotmax,mdotmin, mdotvisc, metallicity, mstar
   real :: qratio, T, gamma_sigma,gamma_omega
-  real :: Q_irr, T_irr,dr, rmax,rmin, betac
+  real :: Q_irr, T_irr,dr, rmax,rmin, betac, vrgas
   real :: gapcriterion, tcross,tgap,tmig1,aspectratio,dustaspectratio,mratio
   real :: tstop_turb, mturb,maxgrow, miso_peb
   real :: percentcount, displaypercent,increment
@@ -244,7 +244,19 @@ PROGRAM calc_pebble_accretion
         ! Compute etadash function (for pebble accretion rates)
         etadash(irad) = Chi*eta(irad)
 
+        ! Pebble radial velocity = drift velocity + viscous radial velocity/tstop (Takeuchi & Lin 2002)
+
+        ! Drift velocity first
         vrpeb(irad) = 2.0*eta(irad)*omega(irad)*r(irad)*tstop(irad)/(1.0 + tstop(irad)*tstop(irad))
+
+        ! now gas viscous radial velocity
+        !vrgas = (sqrt(r(irad+1)*alpha(irad+1)*cs(irad+1)*H(irad+1)*sigma(irad+1)-  &
+         !       sqrt(r(irad)*alpha(irad)*cs(irad)*H(irad)*sigma(irad))))/&
+         !       (r(irad+1)-r(irad))
+
+        !vrgas = -3.0*vrgas/(sqrt(r(irad))*sigma(irad))
+
+        !vrpeb(irad) = abs(vrgas/tstop(irad) - vrpeb(irad))
 
         rpeb = r(irad)
 
@@ -263,9 +275,12 @@ PROGRAM calc_pebble_accretion
         ! Compute mdotpebble (g s^-1)
         mdotpebble = 2.0*pi*rpeb*rdotpeb*zpeb*fpeb*sigma(irad)
 
-        ! Scale height ratio of dust to gas
-        Hp_to_Hg(irad) = sqrt(tstop(irad)/alpha(irad))*&
-                (1 + tstop(irad)/alpha(irad))**(-0.5)
+        ! Scale height ratio of dust to gas (Dubrulle et al 1995)
+
+        !Hp_to_Hg(irad) = sqrt(tstop(irad)/alpha(irad))*&
+        !        (1 + tstop(irad)/alpha(irad))**(-0.5)
+
+        Hp_to_Hg(irad) = sqrt(alpha(irad)/(alpha(irad)+tstop(irad)))
 
         if(Hp_to_Hg(irad)*sigma(irad)*2.0*pi*r(irad)*vrpeb(irad) >1.0e-30) then
            ! Ratio of dust to gas density at this radius
