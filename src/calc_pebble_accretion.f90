@@ -15,15 +15,14 @@ PROGRAM calc_pebble_accretion
   real :: qratio, T, gamma_sigma,gamma_omega
   real :: Q_irr, T_irr,dr, rmax,rmin, betac, vrgas
   real :: gapcriterion, tcross,tgap,tmig1,aspectratio,dustaspectratio,mratio
-  real :: tstop_turb, mturb,maxgrow, miso_peb
+  real :: tstop_turb, mturb,maxgrow, miso_peb, effpeb
   real :: percentcount, displaypercent,increment
 
   real, parameter :: mu = 2.4
 
   real, parameter :: gamma1 = 1.0
   real, parameter :: vfrag = 1.0e3 ! Empirically determined fragmentation velocity (cm/s)
-  real, parameter :: effpeb = 0.001 ! Pebble Accretion Efficiency
-
+  
   integer, allocatable,dimension(:) :: stream_unstable
   real, allocatable, dimension(:) :: r, sigma,cs,omega,alpha,mjeans,Hp_to_Hg,rhop_rhog
   real, allocatable, dimension(:) :: H, eta, vrpeb, rhogas,etadash,tstop,grainsize
@@ -68,6 +67,7 @@ PROGRAM calc_pebble_accretion
   read(10,*) rhosolid ! Density of grains (g cm ^-3)
   read(10,*) zpeb ! Metallicity of disc
   read(10,*) fpeb ! Fraction of disc in pebbles
+  read(10,*) effpeb ! Pebble accretion efficiency
   read(10,*) beta_peb ! growth rate of pebbles t_peb = beta_peb *(zpeb*omega(irad)^-1
   read(10,*) rmax_peb ! Maximum radius to consider pebble accretion  (AU)
   close(10)
