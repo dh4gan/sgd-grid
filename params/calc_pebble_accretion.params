@@ -1,8 +1,11 @@
-Ms0.2.model	input filename
-Ms0.2.pebble	output file prefix
-1.0		Stopping time of pebbles (dimensionless)
-0.02		Dust to Gas Ratio
+Ms1		input filename prefix
+s		Fix either dimensionless stopping time (t) or grainsize (s)
+0.1		Stopping time of pebbles (dimensionless)
+0.1		grain size of pebbles (cm)
+3.0		Physical density of grains (g cm^3)
+0.02		Disc Metallicity (Solar = 0.02)
+0.1		Fraction of solids in pebbles
+0.001		Pebble Accretion Efficiency
 10.0		beta_pebble: Dimensionless timescale for pebble growth
 100.0		Maximum radius for pebbles
-1.0		Planet mass for pebble accretion estimates (Mjup)
 
