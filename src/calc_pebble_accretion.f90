@@ -250,13 +250,18 @@ PROGRAM calc_pebble_accretion
         vrpeb(irad) = 2.0*eta(irad)*omega(irad)*r(irad)*tstop(irad)/(1.0 + tstop(irad)*tstop(irad))
 
         ! now gas viscous radial velocity
-        !vrgas = (sqrt(r(irad+1)*alpha(irad+1)*cs(irad+1)*H(irad+1)*sigma(irad+1)-  &
-         !       sqrt(r(irad)*alpha(irad)*cs(irad)*H(irad)*sigma(irad))))/&
-         !       (r(irad+1)-r(irad))
 
-        !vrgas = -3.0*vrgas/(sqrt(r(irad))*sigma(irad))
+	if(irad>1) then
+        vrgas = (sqrt(r(irad)*alpha(irad)*cs(irad)*H(irad)*sigma(irad)-  &
+                sqrt(r(irad-1)*alpha(irad-1)*cs(irad-1)*H(irad-1)*sigma(irad-1))))/&
+                (r(irad)-r(irad-1))
+	else
+	vrgas = 0.0
+	endif
 
-        !vrpeb(irad) = abs(vrgas/tstop(irad) - vrpeb(irad))
+        vrgas = -3.0*vrgas/(sqrt(r(irad))*sigma(irad))
+
+        vrpeb(irad) = abs(vrgas/tstop(irad) - vrpeb(irad))
 
         rpeb = r(irad)
 
