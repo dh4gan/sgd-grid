@@ -22,7 +22,7 @@ PROGRAM calc_pebble_accretion
 
   real, parameter :: gamma1 = 1.0
   real, parameter :: vfrag = 1.0e3 ! Empirically determined fragmentation velocity (cm/s)
-  
+
   integer, allocatable,dimension(:) :: stream_unstable
   real, allocatable, dimension(:) :: r, sigma,cs,omega,alpha,mjeans,Hp_to_Hg,rhop_rhog
   real, allocatable, dimension(:) :: H, eta, vrpeb, rhogas,etadash,tstop,grainsize
@@ -261,7 +261,7 @@ PROGRAM calc_pebble_accretion
 
         vrgas = -3.0*vrgas/(sqrt(r(irad))*sigma(irad))
 
-        vrpeb(irad) = abs(vrgas/tstop(irad) - vrpeb(irad))
+        vrpeb(irad) = abs(vrgas/(1.0+tstop(irad)*tstop(irad)) - vrpeb(irad))
 
         rpeb = r(irad)
 
