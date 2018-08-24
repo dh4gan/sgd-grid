@@ -13,7 +13,7 @@ PROGRAM calc_pebble_accretion
 
   real :: mdotmax,mdotmin, mdotvisc, metallicity, mstar
   real :: qratio, T, gamma_sigma,gamma_omega
-  real :: Q_irr, T_irr,dr, rmax,rmin, betac, vrgas
+  real :: Q_irr, T_irr,dr, rmax,rmin, betac, vrgas, mpebble
   real :: gapcriterion, tcross,tgap,tmig1,aspectratio,dustaspectratio,mratio
   real :: tstop_turb, mturb,maxgrow, miso_peb, effpeb
   real :: percentcount, displaypercent,increment
@@ -23,10 +23,12 @@ PROGRAM calc_pebble_accretion
   real, parameter :: gamma1 = 1.0
   real, parameter :: vfrag = 1.0e3 ! Empirically determined fragmentation velocity (cm/s)
 
+  real, parameter :: alpha_max = 1.0e20 ! Maximum turbulence for streaming instability
+
   integer, allocatable,dimension(:) :: stream_unstable
   real, allocatable, dimension(:) :: r, sigma,cs,omega,alpha,mjeans,Hp_to_Hg,rhop_rhog
   real, allocatable, dimension(:) :: H, eta, vrpeb, rhogas,etadash,tstop,grainsize
-  real,allocatable,dimension(:) :: tstop_frag,maxgrainsize
+  real,allocatable,dimension(:) :: tstop_frag,maxgrainsize, sigma_peb, sigma_peb_max,mpebtot
 
   integer :: ipebrad,npebrad, irmin_unstable,irmax_unstable
   real :: zpeb, fpeb,beta_peb, rmax_peb, mplanet, Hp, dlogrhodr
@@ -80,6 +82,7 @@ PROGRAM calc_pebble_accretion
   outputlog = trim(outputfile)//".max"
   print*, "Maximal pebble accretion data per gas accretion rates to be written to ", trim(outputlog)
 
+
   !******************************************
   ! 1. Read in disc and recompute essential gas  properties
   !******************************************
@@ -102,6 +105,9 @@ PROGRAM calc_pebble_accretion
   allocate(H(nrad))
   allocate(Hp_to_Hg(nrad))
   allocate(rhop_rhog(nrad))
+  allocate(sigma_peb(nrad))
+  allocate(mpebtot(nrad))
+  allocate(sigma_peb_max(nrad))
   allocate(rhogas(nrad))
   allocate(omega(nrad))
   allocate(alpha(nrad))
@@ -117,7 +123,7 @@ PROGRAM calc_pebble_accretion
 
   ! Find index of maximum radius for pebble accretion (npebrad)
   dr = (rmax-rmin)/REAL(nrad)
-  !dr = dr*udist
+  dr = dr*udist
   npebrad = nrad
 
   if(npebrad > nrad) npebrad = nrad
@@ -192,6 +198,23 @@ PROGRAM calc_pebble_accretion
         rhogas(irad) = sigma(irad)/(2.0*H(irad))
         r(irad) = r(irad)*udist
 
+        
+
+        mpebtot(irad) = fpeb*zpeb*mstar*qratio
+
+        if(irad>1) then
+           sigma_peb_max(irad) = (mpebtot(irad)-mpebtot(irad-1))/(twopi*r(irad)*dr)
+        else
+           sigma_peb_max(irad) = 0.0
+        endif
+
+     enddo
+
+     !print*, 'Total pebble mass: ',mpebtot(nrad)/mearth ,' Earth masses'
+
+     mpebble = 0.0
+     do irad = 1,nrad
+
         !**********************************************************************
         ! 1a  Calculate pressure gradient and eta - sub Keplerian parameter
         !**********************************************************************
@@ -244,7 +267,8 @@ PROGRAM calc_pebble_accretion
         ! Compute etadash function (for pebble accretion rates)
         etadash(irad) = Chi*eta(irad)
 
-        ! Pebble radial velocity = drift velocity + viscous radial velocity/tstop (Takeuchi & Lin 2002)
+        ! Pebble radial velocity = drift velocity + viscous radial velocity 
+        ! (Takeuchi & Lin 2002)
 
         ! Drift velocity first
         vrpeb(irad) = 2.0*eta(irad)*omega(irad)*r(irad)*tstop(irad)/(1.0 + tstop(irad)*tstop(irad))
@@ -261,7 +285,7 @@ PROGRAM calc_pebble_accretion
 
         vrgas = -3.0*vrgas/(sqrt(r(irad))*sigma(irad))
 
-        vrpeb(irad) = abs(vrgas/(1.0+tstop(irad)*tstop(irad)) - vrpeb(irad))
+        vrpeb(irad) = abs(vrgas/(1.0+tstop(irad)*tstop(irad)) + vrpeb(irad))
 
         rpeb = r(irad)
 
@@ -281,22 +305,42 @@ PROGRAM calc_pebble_accretion
         mdotpebble = 2.0*pi*rpeb*rdotpeb*zpeb*fpeb*sigma(irad)
 
         ! Scale height ratio of dust to gas (Dubrulle et al 1995)
-
-        !Hp_to_Hg(irad) = sqrt(tstop(irad)/alpha(irad))*&
-        !        (1 + tstop(irad)/alpha(irad))**(-0.5)
-
         Hp_to_Hg(irad) = sqrt(alpha(irad)/(alpha(irad)+tstop(irad)))
 
-        if(Hp_to_Hg(irad)*sigma(irad)*2.0*pi*r(irad)*vrpeb(irad) >1.0e-30) then
+        ! Surface density of pebbles
+        if(vrpeb(irad)>1.0e-30) then
+           sigma_peb(irad) = (rdotpeb/vrpeb(irad))*zpeb*fpeb*sigma(irad)
+        else
+           sigma_peb(irad) = 0.0
+        endif
+
+
+        if(sigma_peb(irad)>sigma_peb_max(irad))then
+           sigma_peb(irad) = sigma_peb_max(irad)
+        endif
+        
+        if(Hp_to_Hg(irad)*sigma(irad) >1.0e-30) then
            ! Ratio of dust to gas density at this radius
-           rhop_rhog(irad) = mdotpebble/(Hp_to_Hg(irad)*sigma(irad)*2.0*pi*r(irad)*vrpeb(irad))
+           rhop_rhog(irad) = sigma_peb(irad)/(sigma(irad)*Hp_to_Hg(irad))
         else
            rhop_rhog(irad) = 0.0
+        endif
+        
+        ! Double check if total pebble supply used up - compute pebble mass generated so far
+        mpebble = mpebble + twopi*r(irad)*sigma_peb(irad)*dr
+
+        !print*, r(irad)/udist, sigma_peb(irad), sigma_peb_max(irad)
+
+        ! If pebble supply exhausted, then set pebble density to zero
+        if(mpebble>(mpebtot(nrad)/fpeb)) then
+           rhop_rhog(irad) = 0.0
+           Hp_to_Hg(irad) = 0.0
+           STOP
         endif
 
         ! If rhop/rhog >1 and not in fragmentation zone, 
         ! mark this radius as streaming unstable region           
-        if(rhop_rhog(irad)>1.0 .and.mjeans(irad)<1.0e-30) then
+        if(rhop_rhog(irad)>1.0 .and.mjeans(irad)<1.0e-30 .and.alpha(irad)<alpha_max) then
            stream_unstable(irad) = 1
 
            ! Record minimum and maximum values of streaming regions 
@@ -321,8 +365,7 @@ PROGRAM calc_pebble_accretion
 
         enddo
 
-       ! print*, stream_unstable, mjeans, rhop_rhog
-        !STOP
+  
 
         if(outer_radius .eqv. .false.) then
            rmax_unstable = r(nrad)
@@ -349,7 +392,6 @@ PROGRAM calc_pebble_accretion
      ! Now loop again over radius, where radius now refers to rpeb
 
      do ipebrad =1,npebrad
-
 
         rpeb = r(ipebrad)
 
@@ -418,12 +460,13 @@ PROGRAM calc_pebble_accretion
            tcross = 2.5*rhill*tmig1/r(ipebrad)
            
            ! Gap formation timescale
-           tgap = 3.0e4*(dustaspectratio**5)/(omega(ipebrad)*mratio*mratio)          
+           tgap = 1.0e2*(dustaspectratio**5)/(omega(ipebrad)*mratio*mratio)          
 
+           !print*, gapcriterion, 0.75*Hp/rhill, dustaspectratio*dustaspectratio, mratio,alpha(ipebrad)
            ! If a gap is opened in the pebbles, then no pebble accretion
            if(gapcriterion<1.0 .and. tgap< tcross) then
               planet_pebaccrete = 0.0
-
+           !   print*, 'GAP'
            else
 
               ! Compute cross section of pebble flow for accretion
@@ -487,6 +530,14 @@ PROGRAM calc_pebble_accretion
            ! If crossing mass exceeds local isolation mass, restrict it here
           
            if(mcross > miso_peb) mcross = miso_peb
+
+           ! If entire pebble disc required to create embryo, 
+           ! ensure mass cannot exceed total pebble mass (at given efficiency)
+
+           if(mcross > mpebtot(nrad)*effpeb) then
+              !print*, 'Pebble disc mass exceeded: ',mpebtot(nrad)*effpeb/mearth
+              mcross = mpebtot(nrad)*effpeb
+           endif
 
            ! Compute maximum growable mass in turbulent disc
 
