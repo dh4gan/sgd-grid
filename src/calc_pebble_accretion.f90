@@ -314,7 +314,7 @@ PROGRAM calc_pebble_accretion
            sigma_peb(irad) = 0.0
         endif
 
-
+        ! Ensure surface density of pebbles can't exceed local maximum
         if(sigma_peb(irad)>sigma_peb_max(irad))then
            sigma_peb(irad) = sigma_peb_max(irad)
         endif
@@ -328,14 +328,11 @@ PROGRAM calc_pebble_accretion
         
         ! Double check if total pebble supply used up - compute pebble mass generated so far
         mpebble = mpebble + twopi*r(irad)*sigma_peb(irad)*dr
-
-        !print*, r(irad)/udist, sigma_peb(irad), sigma_peb_max(irad)
-
+        
         ! If pebble supply exhausted, then set pebble density to zero
         if(mpebble>(mpebtot(nrad)/fpeb)) then
            rhop_rhog(irad) = 0.0
            Hp_to_Hg(irad) = 0.0
-           STOP
         endif
 
         ! If rhop/rhog >1 and not in fragmentation zone, 
@@ -364,14 +361,19 @@ PROGRAM calc_pebble_accretion
            endif
 
         enddo
-
   
+       ! print*, rmin_unstable/udist, rmax_unstable/udist, outer_radius,sum(stream_unstable)>0,&
+       !      (outer_radius .eqv. .false.) .and. sum(stream_unstable)>0
 
-        if(outer_radius .eqv. .false.) then
+
+        if((outer_radius .eqv. .false.) .and. sum(stream_unstable)>0) then
            rmax_unstable = r(nrad)
            irmax_unstable = nrad
            width_unstable = rmax_unstable - rmin_unstable
         endif
+
+        !print*, rmin_unstable/udist, rmax_unstable/udist
+        !if(sum(stream_unstable)<1) STOP
 
      !******************************************************************
      ! 2. Now compute pebble accretion properties as a function of rpeb
@@ -462,11 +464,11 @@ PROGRAM calc_pebble_accretion
            ! Gap formation timescale
            tgap = 1.0e2*(dustaspectratio**5)/(omega(ipebrad)*mratio*mratio)          
 
-           !print*, gapcriterion, 0.75*Hp/rhill, dustaspectratio*dustaspectratio, mratio,alpha(ipebrad)
+           
            ! If a gap is opened in the pebbles, then no pebble accretion
            if(gapcriterion<1.0 .and. tgap< tcross) then
               planet_pebaccrete = 0.0
-           !   print*, 'GAP'
+           
            else
 
               ! Compute cross section of pebble flow for accretion
@@ -507,18 +509,15 @@ PROGRAM calc_pebble_accretion
     
         mcross = 0.0
         actual_width = 0.0
-
         
 
         ! Only do the calculations for non-zero widths
         ! Do calculation assuming ipebrad = inner distance of streaming
-        if(width_unstable > 0.0) then
+        if(width_unstable > 1.0e-40) then
            if(r(ipebrad)>rmin_unstable .and. r(ipebrad)<rmax_unstable) then
-
-           !h_unstable = H(irmin_unstable)/rmin_unstable
-
+           
            actual_width = rmax_unstable-r(ipebrad)
-           h_unstable = H(ipebrad)/r(ipebrad)
+           h_unstable = H(ipebrad)/r(ipebrad)                    
 
            ! Compute crossing mass at this rpeb (Ormel et al 2017)
            ! with our imposed pebble accretion efficiency (effpeb parameter)
@@ -526,7 +525,7 @@ PROGRAM calc_pebble_accretion
            mcross = sqrt(3.0*pi*actual_width*alpha(ipebrad)*mdotpebble*effpeb/&
                 (rmin_unstable*mdotvisc*gamma1))*h_unstable * h_unstable* Mstar
            
-
+          
            ! If crossing mass exceeds local isolation mass, restrict it here
           
            if(mcross > miso_peb) mcross = miso_peb
@@ -538,7 +537,7 @@ PROGRAM calc_pebble_accretion
               !print*, 'Pebble disc mass exceeded: ',mpebtot(nrad)*effpeb/mearth
               mcross = mpebtot(nrad)*effpeb
            endif
-
+           
            ! Compute maximum growable mass in turbulent disc
 
            ! Find maximum allowed stopping time for bidisperse grain population

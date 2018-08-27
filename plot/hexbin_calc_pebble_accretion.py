@@ -15,7 +15,7 @@ variablekeys = ("grainsize", "tstop","tstopratio","maxgrainsize","tpeb","rdotpeb
 variablenames = (r"$s$ (cm)", r"$\tau_s$",r"$\tau_s/\tau_{s,max}$",r"$s_{\rm max}$ (cm)",r"$t_{\rm peb}$ (yr)",r"$\dot{r}_{\rm peb}$ (AU yr$^{-1}$)",r"$\dot{M}_{\rm peb}\,(M_{\rm Jup} \, \rm{yr}^{-1}$)",r"$H_p/H_g$", r"$\rho_p/\rho_g$",r"$v_{\rm r,peb}$ (cm s$^{-1}$)",r"$\Delta r_{\rm stream}$ (AU)",r"$r_{\rm max,stream}$",r"$M_{\rm cross}\, (M_{\rm \oplus})$",r"$s_{\rm max,turb} (cm)$", r"$M_{\rm iso}\, (M_{\rm \oplus})$",r"$M_{\rm jeans} (M_{\rm Jup})$ ",r"$\dot{M}_{pl}\,(M_{\rm Jup} \, \rm{yr}^{-1})$", r"$\epsilon$")
 variablecolumns = range(2,len(variablekeys)+2)
 
-logplotchoices= ['grainsize','planetmdotpeb','mdotpeb','maxgrainsize','max_graingrowth','vrpeb','rhop_rhog']
+logplotchoices= ['planetmdotpeb','mdotpeb','maxgrainsize','max_graingrowth','vrpeb']
 
 
 namedict = {}
@@ -101,7 +101,7 @@ for i in range(len(choices)):
     # Extract data column and reshape
     print "Plotting ",namedict[choices[i]]
     
-    plotdata = data[:,columns[i]]
+    plotdata = data[:,columns[i]]   
     indices = plotdata[:]>1e-40
     
     # Delete junk data
