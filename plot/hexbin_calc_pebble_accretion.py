@@ -12,7 +12,7 @@ import filefinder as ff
 # Set up tuples and dictionaries
 
 variablekeys = ("grainsize", "tstop","tstopratio","maxgrainsize","tpeb","rdotpeb","mdotpeb","Hp_to_Hg", "rhop_rhog","vrpeb","width_stream","rmax_stream","mcross","max_graingrowth", "miso", "mjeans", "planetmdotpeb","planeteff")
-variablenames = (r"$s$ (cm)", r"$\tau_s$",r"$\tau_s/\tau_{s,max}$",r"$s_{\rm max}$ (cm)",r"$t_{\rm peb}$ (yr)",r"$\dot{r}_{\rm peb}$ (AU yr$^{-1}$)",r"$\dot{M}_{\rm peb}\,(M_{\rm Jup} \, \rm{yr}^{-1}$)",r"$H_p/H_g$", r"$\rho_p/\rho_g$",r"$v_{\rm r,peb}$ (cm s$^{-1}$)",r"$\Delta r_{\rm stream}$ (AU)",r"$r_{\rm max,stream}$",r"$M_{\rm cross}\, (M_{\rm \oplus})$",r"$s_{\rm max,turb} (cm)$", r"$M_{\rm iso}\, (M_{\rm \oplus})$",r"$M_{\rm jeans} (M_{\rm Jup})$ ",r"$\dot{M}_{pl}\,(M_{\rm Jup} \, \rm{yr}^{-1})$", r"$\epsilon$")
+variablenames = (r"$s$ (cm)", r"$\tau_s$",r"$\tau_s/\tau_{s,max}$",r"$s_{\rm max}$ (cm)",r"$t_{\rm peb}$ (yr)",r"$\dot{r}_{\rm peb}$ (AU yr$^{-1}$)",r"$\dot{M}_{\rm peb}\,(M_{\rm Jup} \, \rm{yr}^{-1}$)",r"$H_{\rm peb}/H_g$", r"$\rho_{\rm peb}/\rho_g$",r"$v_{\rm r,peb}$ (cm s$^{-1}$)",r"$\Delta r_{\rm stream}$ (AU)",r"$r_{\rm max,stream}$",r"$M_{\rm cross}\, (M_{\rm \oplus})$",r"$s_{\rm max,turb} (cm)$", r"$M_{\rm iso}\, (M_{\rm \oplus})$",r"$M_{\rm jeans} (M_{\rm Jup})$ ",r"$\dot{M}_{pl}\,(M_{\rm Jup} \, \rm{yr}^{-1})$", r"$\epsilon$")
 variablecolumns = range(2,len(variablekeys)+2)
 
 logplotchoices= ['planetmdotpeb','mdotpeb','maxgrainsize','max_graingrowth','vrpeb']
@@ -79,7 +79,7 @@ nmdot = int(headernums[1])
 
 # Now read rest of file
 
-data = np.genfromtxt(inputfile, skiprows=1)
+data = np.genfromtxt(inputfile, skip_header=1)
 
 print "File Read"
 
@@ -127,6 +127,10 @@ for i in range(len(choices)):
 
     plotmin = np.amin(plotdata)
     plotmax = np.amax(plotdata)
+
+    if(choices[i]=='planetmdotpeb'):
+        plotmax = -5
+        plotmin = -7
     
     print 'min, max: ',plotmin,plotmax
         
@@ -140,6 +144,7 @@ for i in range(len(choices)):
     
     fig1 = plt.figure(figsize=(10,8))
     ax = fig1.add_subplot(111)
+    ax.set_facecolor('gray')
     ax.set_xlim(rmin_orig,rmax_orig)
     ax.set_ylim(mdotmin_orig,mdotmax_orig)
     ax.set_ylabel(r"Gas Accretion Rate $\mathrm{(M_{\odot} yr^{-1})}$", fontsize=22)
@@ -152,7 +157,7 @@ for i in range(len(choices)):
     #ax.set_ylim(3e-5,1e-3)    
 
     # Add a hatched background where model does not return a value
-    ax.set_axis_bgcolor('gray')
+
     xmin, xmax = ax.get_xlim()
     ymin, ymax = ax.get_ylim()
     xy = (xmin,ymin)
@@ -164,13 +169,17 @@ for i in range(len(choices)):
 
     cb = plt.colorbar()
     cb.set_label(namedict[choices[i]], fontsize=26)
+    cb.ax.tick_params(labelsize=16)
 
     # If log scale plot, adjust colorbar labels: 10^val etc
     if(logscaleplot):
 
         tickmin = np.round(plotmin,decimals=1)
         tickmax = np.round(plotmax,decimals=1)
+
+
         tickvals = np.round(np.linspace(tickmin,tickmax,num=10),decimals=2)
+        print tickmin, tickmax, tickvals
         #tickvals = np.round(np.log10(cb.ax.get_yticks()),decimals=2)
         
         ticklabels = [r"$10^{"+str(val)+"}$" for val in tickvals]

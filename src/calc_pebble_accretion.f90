@@ -15,7 +15,7 @@ PROGRAM calc_pebble_accretion
   real :: qratio, T, gamma_sigma,gamma_omega
   real :: Q_irr, T_irr,dr, rmax,rmin, betac, vrgas, mpebble
   real :: gapcriterion, tcross,tgap,tmig1,aspectratio,dustaspectratio,mratio
-  real :: tstop_turb, mturb,maxgrow, miso_peb, effpeb
+  real :: tstop_turb, mturb,maxgrow, miso_peb, effpeb, dv_drift, sigma_deltav
   real :: percentcount, displaypercent,increment
 
   real, parameter :: mu = 2.4
@@ -486,16 +486,27 @@ PROGRAM calc_pebble_accretion
 
               if(planet_pebaccrete>1.0) planet_pebaccrete = 1.0
 
-              planet_pebaccrete = sqrt(pi/2)*(bcross*bcross/Hp)* &
-                   mdotpebble/(4.0*pi*r(ipebrad)*tstop(ipebrad)*zeta)
+              sigma_deltav =  mdotpebble/(4.0*pi*r(ipebrad)*tstop(ipebrad)*zeta)
+              sigma_deltav = sigma_deltav*Chi*(1.0+ 3*bcross_reduce/(2*Chi*eta(ipebrad)*r(ipebrad)))
 
-              planet_pebaccrete = planet_pebaccrete*Chi*(1.0+ 3*bcross_reduce/(2*Chi*eta(ipebrad)))
+              dv_drift = sigma_deltav/sigma_peb(ipebrad)
+              
+              planet_pebaccrete = sqrt(pi/2)*(bcross*bcross/Hp)*sigma_deltav
 
               if(planet_pebaccrete>mdotpebble) planet_pebaccrete = mdotpebble
 
-              if(abs(planet_pebaccrete*year/mjup)>1.0e10) then
-                 print*, planet_pebaccrete, Hp, bcross, bcross_reduce,eta(ipebrad)
+
+              ! If the fragment can open a gap *in the pebbles*, i.e. mjeans > miso
+              ! then dv is given by migration rate, not pebble drift
+              ! must modify pebble accretion accordingly
+
+              if(mratio>dustaspectratio**3) then
+                 planet_pebaccrete = planet_pebaccrete*(1.0- r(ipebrad)/(tmig1*dv_drift))
+                 !print*, mratio, dustaspectratio**3, &
+                 !     (1.0- r(ipebrad)/(tmig1*dv_drift))
+                 if (planet_pebaccrete<0.0) planet_pebaccrete = 0.0
               endif
+              
 
            endif
            ! measure pebble accretion efficiency
